@@ -19,7 +19,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # FastAPI
-COPY python/thermal/requirements.txt /tmp/
+COPY python/requirements.txt /tmp/
 RUN pip3 install -r /tmp/requirements.txt --break-system-packages
 COPY python/thermal/ /app/thermal/
 
