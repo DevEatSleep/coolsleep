@@ -1,0 +1,58 @@
+name: Deploy CoolSleep
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  # ── Job 1 : déploiement container sur Render ─────────────────────────────
+  deploy-render:
+    name: Deploy API + Thermal → Render
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render redeploy
+        run: |
+          curl -s -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}" --fail
+        # Le deploy hook Render déclenche un rebuild depuis GitHub.
+        # Configurer dans : Render → Service → Settings → Deploy hook
+        # Copier l'URL dans GitHub → Settings → Secrets → RENDER_DEPLOY_HOOK
+
+  # ── Job 2 : déploiement Blazor WASM statique sur GitHub Pages ─────────────
+  # Optionnel — à activer si tu préfères GitHub Pages pour le front
+  # (meilleure latence CDN, pas de cold start sur les assets statiques)
+  deploy-pages:
+    name: Deploy Blazor WASM → GitHub Pages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publish Blazor WASM
+        run: |
+          dotnet publish CoolSleep.Web/CoolSleep.Web.csproj \
+            -c Release -o publish/web
+          # Patch base href pour GitHub Pages — remplacer /coolsleep/ par ton repo
+          sed -i 's|<base href="/" />|<base href="/coolsleep/" />|g' \
+            publish/web/wwwroot/index.html
+          # Nécessaire pour servir les fichiers _framework sans Jekyll
+          touch publish/web/wwwroot/.nojekyll
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: publish/web/wwwroot
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

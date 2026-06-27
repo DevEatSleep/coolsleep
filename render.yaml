@@ -1,0 +1,20 @@
+# render.yaml — Blueprint Render (Infrastructure as Code)
+# Docs : https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: coolsleep
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    branch: main
+    region: frankfurt          # EU — le plus proche de la France
+    plan: free
+    healthCheckPath: /health
+
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+
+    # Render free tier : sleep après 15 min sans trafic.
+    # UptimeRobot ping /health toutes les 10 min → évite le sleep.
+    # Configurer sur https://uptimerobot.com (gratuit, sans CB)

@@ -1,0 +1,45 @@
+<MudDialog>
+    <DialogContent>
+        <MudText Typo="Typo.h6" Class="mb-5">Comment CoolSleep calcule votre plan</MudText>
+
+        <div class="d-flex align-start gap-3 mb-4">
+            <MudIcon Icon="@Icons.Material.Outlined.Thermostat" Color="Color.Primary" Style="margin-top: 2px; flex-shrink: 0;" />
+            <div>
+                <div style="font-weight: 600; margin-bottom: 2px;">Votre logement</div>
+                <MudText Typo="Typo.body2" Style="opacity: 0.75;">Ville, type d'habitation et volets fermés — chaque détail affine la simulation d'inertie thermique.</MudText>
+            </div>
+        </div>
+
+        <div class="d-flex align-start gap-3 mb-4">
+            <MudIcon Icon="@Icons.Material.Outlined.WbSunny" Color="Color.Warning" Style="margin-top: 2px; flex-shrink: 0;" />
+            <div>
+                <div style="font-weight: 600; margin-bottom: 2px;">Chauffe diurne</div>
+                <MudText Typo="Typo.body2" Style="opacity: 0.75;">CoolSleep simule comment votre logement chauffe de 10h à 18h, en partant de votre température matinale.</MudText>
+            </div>
+        </div>
+
+        <div class="d-flex align-start gap-3 mb-4">
+            <MudIcon Icon="@Icons.Material.Outlined.NightsStay" Color="Color.Secondary" Style="margin-top: 2px; flex-shrink: 0;" />
+            <div>
+                <div style="font-weight: 600; margin-bottom: 2px;">Plan nocturne</div>
+                <MudText Typo="Typo.body2" Style="opacity: 0.75;">L'algorithme calcule heure par heure la température intérieure et détermine quand l'air extérieur est assez frais pour ouvrir.</MudText>
+            </div>
+        </div>
+
+        <div class="d-flex align-start gap-3">
+            <MudIcon Icon="@Icons.Material.Outlined.Speed" Color="Color.Error" Style="margin-top: 2px; flex-shrink: 0;" />
+            <div>
+                <div style="font-weight: 600; margin-bottom: 2px;">Score de risque</div>
+                <MudText Typo="Typo.body2" Style="opacity: 0.75;">De 0 à 100 — il reflète l'intensité de la nuit thermique. Au-dessus de 50, la nuit risque d'être inconfortable sans action.</MudText>
+            </div>
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton FullWidth Variant="Variant.Filled" Color="Color.Primary"
+                   OnClick="@(() => MudDialog.Close())">Compris</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+}

@@ -1,0 +1,9 @@
+{
+  "name": "CoolSleep",
+  "short_name": "CoolSleep",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#070F1C",
+  "theme_color": "#4FC4C4",
+  "icons": []
+}

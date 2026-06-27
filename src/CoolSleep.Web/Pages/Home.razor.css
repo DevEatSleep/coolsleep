@@ -1,0 +1,79 @@
+::deep .risk-alert .mud-alert-icon {
+    display: none;
+}
+
+/* Arc gauge */
+.arc-container {
+    position: relative;
+    width: 100%;
+    max-width: 240px;
+    margin: 0 auto 1rem;
+}
+
+.comfort-arc {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.arc-center-text {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    padding-bottom: 0.25rem;
+}
+
+.arc-score {
+    display: block;
+    font-size: 2.5rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.arc-label {
+    display: block;
+    font-size: 0.8rem;
+    opacity: 0.65;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+/* GPS primary action button */
+.gps-action-btn {
+    display: block;
+    width: 100%;
+    background: #1E293B;
+    border: 2px solid rgba(79, 196, 196, 0.3);
+    border-radius: 16px;
+    padding: 1.5rem 1.25rem;
+    text-align: left;
+    cursor: default;
+    margin-bottom: 0.75rem;
+}
+
+.gps-action-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.gps-action-label {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #FFFFFF;
+    line-height: 1.2;
+}
+
+.gps-action-detail {
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* Reset area */
+.reset-area {
+    margin-top: 1rem;
+    text-align: center;
+}

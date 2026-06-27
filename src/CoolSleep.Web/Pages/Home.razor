@@ -1,0 +1,423 @@
+@page "/"
+@inject NightPlanApiClient Client
+@inject IJSRuntime JS
+@inject HttpClient Http
+@inject IDialogService DialogService
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="py-4">
+    @if (result == null)
+    {
+        <MudText Class="mb-4 text-center" style="font-size: 1.5rem; font-weight: 500;">
+            Optimisez votre nuit de chaleur
+        </MudText>
+
+        <MudText Class="mb-2 text-center" Typo="Typo.body2" Style="opacity: 0.65; line-height: 1.5;">
+            Renseignez votre ville et votre type de logement — CoolSleep calcule exactement
+            quand ouvrir et fermer vos fenêtres cette nuit pour rester au frais.
+        </MudText>
+
+        <div class="d-flex justify-center mb-4">
+            <MudButton Variant="Variant.Text" Color="Color.Default"
+                       StartIcon="@Icons.Material.Outlined.HelpOutline"
+                       OnClick="ShowHelp"
+                       Style="opacity: 0.6; font-size: 0.8rem;">
+                Comment ça marche ?
+            </MudButton>
+        </div>
+
+        <MudSelect T="CityOption" @bind-Value="selectedCity" Label="Ville"
+                   Variant="Variant.Outlined" Class="mb-4"
+                   AnchorOrigin="Origin.BottomCenter" TransformOrigin="Origin.TopCenter">
+            @foreach (var city in Cities)
+            {
+                <MudSelectItem Value="city">@city.Name</MudSelectItem>
+            }
+        </MudSelect>
+
+        <MudButton FullWidth Variant="Variant.Outlined" Color="Color.Default"
+                   Size="Size.Large" OnClick="UseGps" Class="mb-4" Disabled="gpsLoading"
+                   StartIcon="@Icons.Material.Filled.MyLocation">
+            @(gpsLoading ? "Localisation en cours…" : (gpsLabel ?? "Utiliser ma position GPS"))
+        </MudButton>
+
+        <MudSelect T="string" @bind-Value="housing" Label="Type de logement"
+                   Variant="Variant.Outlined" Class="mb-4"
+                   AnchorOrigin="Origin.BottomCenter" TransformOrigin="Origin.TopCenter">
+            @foreach (var opt in HousingOptions)
+            {
+                <MudSelectItem Value="@opt.Code">@opt.Label</MudSelectItem>
+            }
+        </MudSelect>
+
+        <MudSwitch @bind-Value="voletsFermes" Label="Volets fermés la journée"
+                   Color="Color.Primary" Class="mb-4" />
+
+        <MudNumericField @bind-Value="indoorTempStart" Label="Température intérieure ce matin (°C)"
+                         Variant="Variant.Outlined" Class="mb-4"
+                         Placeholder="24" Min="10" Max="40"
+                         HelperText="Mesurée avant 10h, quand vous vous levez — laissez vide si vous n'avez pas de thermomètre" />
+
+        <MudButton FullWidth Variant="Variant.Filled" Color="Color.Primary"
+                   Size="Size.Large" OnClick="Calculate" Class="mb-2">
+            Calculer mon plan de nuit
+        </MudButton>
+
+        @if (loading)
+        {
+            <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+        }
+
+        @if (!string.IsNullOrEmpty(error))
+        {
+            <MudAlert Severity="Severity.Error" Class="mt-4">@error</MudAlert>
+        }
+    }
+    else
+    {
+        @* Zone 1 : Arc SVG de confort *@
+        <div class="arc-container">
+            <svg viewBox="0 0 200 110" class="comfort-arc" aria-hidden="true">
+                <circle cx="100" cy="100" r="80" fill="none"
+                        stroke="rgba(255,255,255,0.1)" stroke-width="16"
+                        stroke-dasharray="@($"{ArcCircumference / 2.0:F2} {ArcCircumference:F2}")"
+                        stroke-dashoffset="@ArcStrokeDashOffset"
+                        stroke-linecap="round" />
+                <circle cx="100" cy="100" r="80" fill="none"
+                        stroke="@ArcColor" stroke-width="16"
+                        stroke-dasharray="@ArcStrokeDashArray"
+                        stroke-dashoffset="@ArcStrokeDashOffset"
+                        stroke-linecap="round" />
+            </svg>
+            <div class="arc-center-text">
+                <span class="arc-score" style="color: @ArcColor">@result!.RiskScore</span>
+                <span class="arc-label">@ArcLabel</span>
+            </div>
+        </div>
+
+        @* Ville et logement *@
+        <div style="text-align: center; opacity: 0.6; font-size: 0.85rem; margin-bottom: 0.75rem; letter-spacing: 0.02em;">
+            @result!.City &nbsp;·&nbsp; @HousingLabel
+        </div>
+
+        @* Zone 2 : Bouton GPS — instruction impérative *@
+        <button class="gps-action-btn">
+            <div class="gps-action-header">
+                <MudIcon Icon="@GpsButtonIconAndColor.Icon"
+                         Style="@($"font-size:2rem; color:{ArcColor}")" />
+                <span class="gps-action-label">@GpsButtonLabel</span>
+            </div>
+            <div class="gps-action-detail">@GpsButtonDetail</div>
+        </button>
+
+        @* Zones 3-4 : Données secondaires repliées *@
+        <MudExpansionPanels Elevation="0">
+            <MudExpansionPanel Text="Voir le plan complet">
+                <MudTimeline TimelineAlign="TimelineAlign.Start">
+                    @foreach (var action in result.Actions)
+                    {
+                        var (icon, color) = getIconAndColor(action.ActionType);
+                        <MudTimelineItem Icon="@icon" Color="color">
+                            <div style="font-weight: 500;">@($"{action.Hour}:00") - @action.Label</div>
+                            <div style="opacity: 0.7; font-size: 0.9rem;">@action.Detail</div>
+                        </MudTimelineItem>
+                    }
+                </MudTimeline>
+            </MudExpansionPanel>
+
+            <MudExpansionPanel Text="Données météo & températures">
+                <MudGrid Class="mb-2">
+
+                    @* T° intérieure min — affichage conditionnel selon gain *@
+                    <MudItem xs="4">
+                        <MudPaper Class="pa-4 text-center" Elevation="0">
+                            <div class="d-flex justify-center align-center" style="gap: 4px;">
+                                <div style="opacity: 0.7; font-size: 0.875rem;">Chez vous</div>
+                                <MudTooltip Text="@TempIntTooltip" Placement="Placement.Bottom">
+                                    <MudIcon Icon="@Icons.Material.Outlined.Info"
+                                             Size="Size.Small"
+                                             Style="opacity: 0.45; font-size: 1rem; cursor: help;" />
+                                </MudTooltip>
+                            </div>
+                            <div style="font-size: 1.5rem; font-weight: 500;">
+                                @result.MinIndoorTemp.ToString("F1")°C
+                            </div>
+                            @if (GainSignificatif)
+                            {
+                                @* Gain réel : afficher l'écart plutôt que la température brute *@
+                                <div style="opacity: 0.7; font-size: 0.75rem; margin-top: 2px; color: #4CAF50;">
+                                    ↓ @Gain.ToString("F1")°C vs fenêtres fermées
+                                </div>
+                            }
+                            else
+                            {
+                                @* Gain nul : message contextuel, pas de doublon de température *@
+                                <div style="opacity: 0.5; font-size: 0.75rem; margin-top: 2px;">
+                                    sans gain possible
+                                </div>
+                            }
+                        </MudPaper>
+                    </MudItem>
+
+                    <MudItem xs="4">
+                        <MudPaper Class="pa-4 text-center" Elevation="0">
+                            <div class="d-flex justify-center align-center" style="gap: 4px;">
+                                <div style="opacity: 0.7; font-size: 0.875rem;">Dehors</div>
+                                <MudTooltip Text="Température extérieure minimale prévue cette nuit — c'est le plancher naturel vers lequel votre logement peut tendre."
+                                            Placement="Placement.Bottom">
+                                    <MudIcon Icon="@Icons.Material.Outlined.Info"
+                                             Size="Size.Small"
+                                             Style="opacity: 0.45; font-size: 1rem; cursor: help;" />
+                                </MudTooltip>
+                            </div>
+                            <div style="font-size: 1.5rem; font-weight: 500;">
+                                @result.MinOutdoorTemp.ToString("F1")°C
+                            </div>
+                            <div style="opacity: 0.5; font-size: 0.75rem; margin-top: 2px;">
+                                nocturne prévue
+                            </div>
+                        </MudPaper>
+                    </MudItem>
+
+                    <MudItem xs="4">
+                        <MudPaper Class="pa-4 text-center" Elevation="0">
+                            <div class="d-flex justify-center align-center" style="gap: 4px;">
+                                <div style="opacity: 0.7; font-size: 0.875rem;">Humidité</div>
+                                <MudTooltip Text="Humidité relative moyenne cette nuit. Une humidité élevée amplifie la sensation de chaleur (indice de chaleur)."
+                                            Placement="Placement.Bottom">
+                                    <MudIcon Icon="@Icons.Material.Outlined.Info"
+                                             Size="Size.Small"
+                                             Style="opacity: 0.45; font-size: 1rem; cursor: help;" />
+                                </MudTooltip>
+                            </div>
+                            <div style="font-size: 1.5rem; font-weight: 500;">@result.AvgHumidity%</div>
+                            <div style="opacity: 0.5; font-size: 0.75rem; margin-top: 2px;">
+                                moyenne cette nuit
+                            </div>
+                        </MudPaper>
+                    </MudItem>
+
+                </MudGrid>
+            </MudExpansionPanel>
+        </MudExpansionPanels>
+
+        @* Zone 6 : Recalculer *@
+        <div class="reset-area">
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                       Size="Size.Medium" OnClick="Reset"
+                       StartIcon="@Icons.Material.Filled.Refresh">
+                Recalculer
+            </MudButton>
+        </div>
+    }
+
+</MudContainer>
+
+@code {
+    private record CityOption(string Name, double Lat, double Lon);
+    private record HousingOption(string Code, string Label);
+
+    private static readonly CityOption[] Cities =
+    [
+        new("Paris",       48.8566,  2.3522),
+        new("Lyon",        45.7640,  4.8357),
+        new("Marseille",   43.2965,  5.3698),
+        new("Bordeaux",    44.8378, -0.5792),
+        new("Toulouse",    43.6047,  1.4442),
+        new("Nice",        43.7102,  7.2620),
+        new("Montpellier", 43.6119,  3.8772),
+    ];
+
+    private static readonly HousingOption[] HousingOptions =
+    [
+        new("Climatise",       "Climatisé"),
+        new("MaisonRdC",       "Maison plain-pied"),
+        new("MaisonEtage",     "Maison avec étage"),
+        new("MaisonSousToits", "Maison sous les toits"),
+        new("AppartBas",       "Appartement (bas)"),
+        new("AppartHaut",      "Appartement (haut)"),
+        new("SousToits",       "Appartement sous les toits"),
+    ];
+
+    // ── Seuil de gain significatif ──────────────────────────────────────────
+    // En dessous de 0.5°C, la différence avec/sans plan n'est pas perceptible
+    // et afficher "sans plan : X°C" serait contre-productif.
+    private const double GainSeuil = 0.5;
+
+    private CityOption selectedCity      = Cities[0];
+    private string     housing           = "AppartBas";
+    private bool       voletsFermes      = true;
+    private double?    indoorTempStart   = null;
+    private bool       loading           = false;
+    private string?    error             = null;
+    private NightPlanModel? result  = null;
+    private double?    gpsLat;
+    private double?    gpsLon;
+    private string?    gpsLabel;
+    private bool       gpsLoading   = false;
+
+    // ── Gain thermique ──────────────────────────────────────────────────────
+    private double Gain            => result is null ? 0 : result.BaselineMinIndoorTemp - result.MinIndoorTemp;
+    private bool   GainSignificatif => Gain >= GainSeuil;
+
+    private string TempIntTooltip => GainSignificatif
+        ? $"En suivant le plan, vous gagnez {Gain:F1}°C vs fenêtres fermées toute la nuit."
+        : "Cette nuit, ouvrir les fenêtres n'apporte pas de gain thermique mesurable.";
+
+    private string HousingLabel =>
+        HousingOptions.FirstOrDefault(h => h.Code == housing)?.Label ?? housing;
+
+    private Color riskColor =>
+        result?.RiskLevel switch
+        {
+            "Normal"             => Color.Success,
+            "Modere"             => Color.Warning,
+            "Eleve" or "Critique"=> Color.Error,
+            _                    => Color.Default
+        };
+
+    // ── Arc SVG ─────────────────────────────────────────────────────────────
+    private static readonly double ArcCircumference = 2.0 * Math.PI * 80.0;
+
+    private string ArcStrokeDashArray =>
+        result is null
+            ? $"0 {ArcCircumference:F2}"
+            : $"{result.RiskScore / 100.0 * ArcCircumference / 2.0:F2} {ArcCircumference:F2}";
+
+    private string ArcStrokeDashOffset => $"{ArcCircumference * 0.75:F2}";
+
+    private string ArcColor =>
+        result?.RiskScore switch
+        {
+            <= 30 => "#4CAF50",
+            <= 60 => "#FF9800",
+            _     => "#F44336"
+        } ?? "#4CAF50";
+
+    private string ArcLabel =>
+        result?.RiskScore switch
+        {
+            <= 30 => "Confortable",
+            <= 60 => "Chaud",
+            _     => "Très chaud"
+        } ?? "";
+
+    // ── Prochaine action (axe nocturne 18h→35h) ─────────────────────────────
+    private NightActionModel? NextAction
+    {
+        get
+        {
+            if (result is null) return null;
+            int shiftedNow = (DateTime.Now.Hour - 18 + 24) % 24;
+            var ordered    = result.Actions.OrderBy(a => (a.Hour - 18 + 24) % 24).ToList();
+            return ordered.FirstOrDefault(a => (a.Hour - 18 + 24) % 24 >= shiftedNow)
+                ?? ordered.FirstOrDefault();
+        }
+    }
+
+    private string GpsButtonLabel  => NextAction?.Label ?? "Plan terminé — bonne nuit !";
+    private string GpsButtonDetail =>
+        NextAction is null
+            ? "Vous avez suivi toutes les étapes du plan."
+            : $"À {NextAction.Hour}h00 · {NextAction.Detail}";
+
+    private (string Icon, Color Color) GpsButtonIconAndColor =>
+        NextAction is null
+            ? (Icons.Material.Filled.CheckCircleOutline, Color.Success)
+            : getIconAndColor(NextAction.ActionType);
+
+    // ── Actions ─────────────────────────────────────────────────────────────
+    private async Task ShowHelp()
+    {
+        var options = new DialogOptions
+        {
+            MaxWidth      = MaxWidth.ExtraSmall,
+            FullWidth     = true,
+            CloseOnEscapeKey = true
+        };
+        await DialogService.ShowAsync<HelpDialog>(string.Empty, options);
+    }
+
+    private async Task Calculate()
+    {
+        loading = true;
+        error   = null;
+        try
+        {
+            double lat  = gpsLat ?? selectedCity.Lat;
+            double lon  = gpsLon ?? selectedCity.Lon;
+            string city = gpsLabel ?? selectedCity.Name;
+            result = await Client.GetAsync(city, lat, lon, housing, voletsFermes, indoorTempStart ?? 24.0);
+            if (result == null) error = "Erreur: pas de réponse du serveur";
+        }
+        catch (Exception ex)
+        {
+            error = $"Erreur: {ex.Message}";
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private void Reset()
+    {
+        result   = null;
+        error    = null;
+        gpsLat   = null;
+        gpsLon   = null;
+        gpsLabel = null;
+    }
+
+    private async Task UseGps()
+    {
+        gpsLoading = true;
+        error      = null;
+        try
+        {
+            var coords = await JS.InvokeAsync<GpsCoords>("getGeolocation");
+            gpsLat = coords.Latitude;
+            gpsLon = coords.Longitude;
+            try
+            {
+                var url = FormattableString.Invariant(
+                    $"https://nominatim.openstreetmap.org/reverse?format=json&lat={coords.Latitude:F6}&lon={coords.Longitude:F6}&accept-language=fr");
+                var geo = await Http.GetFromJsonAsync<NominatimResponse>(url);
+                gpsLabel = geo?.Address?.City
+                    ?? geo?.Address?.Town
+                    ?? geo?.Address?.Village
+                    ?? geo?.Address?.County
+                    ?? $"Ma position ({coords.Latitude:F2}°, {coords.Longitude:F2}°)";
+            }
+            catch
+            {
+                gpsLabel = $"Ma position ({coords.Latitude:F2}°, {coords.Longitude:F2}°)";
+            }
+        }
+        catch (Exception ex)
+        {
+            error = $"Géolocalisation impossible : {ex.Message}";
+        }
+        finally
+        {
+            gpsLoading = false;
+        }
+    }
+
+    private record GpsCoords(double Latitude, double Longitude);
+    private record NominatimResponse(NominatimAddress? Address);
+    private record NominatimAddress(string? City, string? Town, string? Village, string? County);
+
+    private (string Icon, Color Color) getIconAndColor(string actionType) =>
+        actionType switch
+        {
+            "FermerVolets"             => (Icons.Material.Filled.Blinds,         Color.Info),
+            "OuvrirFenetres"           => (Icons.Material.Filled.Air,            Color.Success),
+            "FermerFenetres"           => (Icons.Material.Filled.Window,         Color.Warning),
+            "VentilateurOn"            => (Icons.Material.Filled.AcUnit,         Color.Primary),
+            "ReglerClimatisation"      => (Icons.Material.Filled.AcUnit,         Color.Primary),
+            "RefraichissementNocturne" => (Icons.Material.Filled.NightsStay,     Color.Secondary),
+            "FermerMatin"              => (Icons.Material.Filled.WbSunny,        Color.Warning),
+            "InformationSeulement"     => (Icons.Material.Outlined.Info,         Color.Default),
+            _                          => (Icons.Material.Filled.Info,           Color.Default)
+        };
+}
