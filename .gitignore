@@ -19,3 +19,4 @@ coolsleep_venv/
 .env
 .env.local
 .claude/
+DEPLOY.md
