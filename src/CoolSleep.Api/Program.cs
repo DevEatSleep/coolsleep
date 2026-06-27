@@ -25,6 +25,8 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 
 app.UseCors();
+app.MapGet("/health", () => Results.Ok(new { status = "ok", service = "api" }))
+    .WithName("Health");
 app.MapNightPlan();
 
 app.Run();
