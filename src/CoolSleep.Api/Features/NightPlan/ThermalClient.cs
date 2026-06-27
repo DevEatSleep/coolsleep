@@ -35,7 +35,7 @@ public class ThermalClient(HttpClient http)
 
 // ── Résultat brut du service Python ───────────────────────────────────────
 public sealed record ThermalResult(
-    List<ThermalHour> Hours,
+    [property: JsonPropertyName("hours")] List<ThermalHour> Hours,
     [property: JsonPropertyName("optimal_open_hour")]    int?   OptimalOpenHour,
     [property: JsonPropertyName("optimal_close_hour")]   int?   OptimalCloseHour,
     [property: JsonPropertyName("min_indoor_reachable")] double MinIndoorReachable,
