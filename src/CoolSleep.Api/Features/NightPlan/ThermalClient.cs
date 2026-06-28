@@ -25,11 +25,22 @@ public class ThermalClient(HttpClient http)
             indoor_temp_start  = indoorTempStart
         };
 
-        var response = await http.PostAsJsonAsync("/thermal/compute", payload, ct);
-        response.EnsureSuccessStatusCode();
-
-        return await response.Content.ReadFromJsonAsync<ThermalResult>(ct)
-               ?? throw new InvalidOperationException("Thermal service returned null");
+        const int maxAttempts = 3;
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            try
+            {
+                var response = await http.PostAsJsonAsync("/thermal/compute", payload, ct);
+                response.EnsureSuccessStatusCode();
+                return await response.Content.ReadFromJsonAsync<ThermalResult>(ct)
+                       ?? throw new InvalidOperationException("Thermal service returned null");
+            }
+            catch (HttpRequestException) when (attempt < maxAttempts)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(attempt), ct);
+            }
+        }
+        throw new InvalidOperationException("Thermal service unreachable after retries");
     }
 }
 

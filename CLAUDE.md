@@ -29,7 +29,7 @@ Browser (Blazor WASM PWA)
 **Python service** (`python/thermal/`) is a pure computation microservice:
 - `schemas.py` — Pydantic models and `HousingType` enum (snake_case strings)
 - `model.py` — thermal inertia: `T_int(h) = α·T_int(h-1) + (1-α)·T_ext(h-lag)`, constants keyed by `HousingType`
-- `api.py` — two routes: `POST /thermal/compute` and `GET /health`
+- `main.py` — two routes: `POST /thermal/compute` and `GET /health`
 
 **Blazor WASM** (`src/CoolSleep.Web`) is frontend only — `NightPlanApiClient` calls the C# API.
 
@@ -44,7 +44,7 @@ Browser (Blazor WASM PWA)
 ```bash
 cd python
 .\coolsleep_venv\Scripts\Activate.ps1   # Windows
-uvicorn thermal.api:app --reload --port 8000
+uvicorn thermal.main:app --reload --port 8000
 # Swagger: http://localhost:8000/docs
 ```
 
