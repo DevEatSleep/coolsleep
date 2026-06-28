@@ -1,0 +1,29 @@
+@using System.Reflection
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="2">
+            <MudText Typo="Typo.h6">🌙 CoolSleep</MudText>
+            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                v@(AppVersion)
+            </MudText>
+            <MudDivider Class="my-2" />
+            <MudText>Par Thierry Verdier</MudText>
+            <MudLink Href="https://github.com/DevEatSleep/" Target="_blank">
+                github.com/DevEatSleep
+            </MudLink>
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Text" OnClick="@(() => MudDialog.Close())">
+            Fermer
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+
+    private string AppVersion { get; } =
+        typeof(AboutDialog).Assembly.GetName().Version?.ToString(3) ?? "1.0.0";
+}

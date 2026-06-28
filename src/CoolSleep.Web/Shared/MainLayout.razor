@@ -1,4 +1,5 @@
 @inherits LayoutComponentBase
+@inject IDialogService DialogService
 
 <MudThemeProvider IsDarkMode="true" />
 <MudDialogProvider />
@@ -6,9 +7,31 @@
 
 <MudLayout>
     <MudAppBar>
-        <MudText Class="mx-auto" style="font-size: 1.25rem; font-weight: 500;">CoolSleep 🌙</MudText>
+        <MudSpacer />
+        <MudText style="font-size: 1.25rem; font-weight: 500;">CoolSleep 🌙</MudText>
+        <MudSpacer />
+        <MudIconButton Icon="@Icons.Material.Outlined.Info"
+                       Color="Color.Default"
+                       Size="Size.Small"
+                       style="opacity:0.6"
+                       OnClick="ShowAbout"
+                       Title="À propos" />
     </MudAppBar>
     <MudMainContent>
         @Body
     </MudMainContent>
 </MudLayout>
+
+@code {
+    private async Task ShowAbout()
+    {
+        var options = new DialogOptions
+        {
+            MaxWidth         = MaxWidth.ExtraSmall,
+            FullWidth        = true,
+            CloseOnEscapeKey = true,
+        };
+        await DialogService.ShowAsync<AboutDialog>(string.Empty, options);
+    }
+}
+

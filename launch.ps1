@@ -14,7 +14,7 @@ if (-not $pwshPath) {
 
 # 1. Python Thermal Service (port 8000)
 Write-Host "Starting Python thermal service (port 8000)..." -ForegroundColor Green
-$pythonCmd = "cd '$projectRoot\python'; if (Test-Path '.\coolsleep_venv\Scripts\Activate.ps1') { & '.\coolsleep_venv\Scripts\Activate.ps1' } else { python -m venv coolsleep_venv; & '.\coolsleep_venv\Scripts\Activate.ps1'; pip install -r requirements.txt }; uvicorn thermal.api:app --reload --port 8000"
+$pythonCmd = "cd '$projectRoot\python'; if (Test-Path '.\coolsleep_venv\Scripts\Activate.ps1') { & '.\coolsleep_venv\Scripts\Activate.ps1' } else { python -m venv coolsleep_venv; & '.\coolsleep_venv\Scripts\Activate.ps1'; pip install -r requirements.txt }; uvicorn thermal.main:app --reload --port 8000"
 Start-Process $pwshPath -ArgumentList "-NoExit", "-Command", $pythonCmd
 
 Start-Sleep -Seconds 2
