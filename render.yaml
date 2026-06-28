@@ -9,6 +9,7 @@ services:
     branch: main
     region: frankfurt          # EU — le plus proche de la France
     plan: free
+    port: 80
     healthCheckPath: /health
 
     envVars:
