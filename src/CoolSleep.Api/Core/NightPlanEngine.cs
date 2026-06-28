@@ -116,7 +116,12 @@ public static class NightPlanEngine
         }
 
         // ── Heure de fermeture optimale ─────────────────────────────────────
-        if (closeHour is not null && windowWasOpened)
+        // Check if morning close comes before regular close (will add FermerMatin instead)
+        var morningIsBeforeClose = morningCloseHour is null || closeHour is null
+            || NightHour(morningCloseHour.Value) < NightHour(closeHour.Value);
+
+        if (closeHour is not null && windowWasOpened
+            && !(morningCloseHour is not null && morningCloseHour != closeHour && morningIsBeforeClose))
         {
             var hClose  = hours.FirstOrDefault(h => h.Hour == closeHour);
 
@@ -172,9 +177,6 @@ public static class NightPlanEngine
         }
 
         // ── Fermeture matinale ──────────────────────────────────────────────
-        var morningIsBeforeClose = morningCloseHour is null || closeHour is null
-            || NightHour(morningCloseHour.Value) < NightHour(closeHour.Value);
-
         if (morningCloseHour is not null
             && morningCloseHour != closeHour
             && morningIsBeforeClose
