@@ -24,8 +24,19 @@ public static class NightPlanEndpoint
                 city, lat, lon, housingType,
                 volets ?? true,
                 indoor_temp_start ?? 24.0);
-            var result  = await handler.HandleAsync(request, ct);
-            return Results.Ok(result);
+
+            try
+            {
+                var result = await handler.HandleAsync(request, ct);
+                return Results.Ok(result);
+            }
+            catch (HttpRequestException)
+            {
+                return Results.Problem(
+                    title:      "Upstream service unavailable",
+                    detail:     "Weather data is temporarily unavailable, please retry in a moment.",
+                    statusCode: StatusCodes.Status503ServiceUnavailable);
+            }
         })
         .WithName("GetNightPlan")
         .WithSummary("Génère le plan de nuit pour une ville et un type de logement");
