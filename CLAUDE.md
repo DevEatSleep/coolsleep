@@ -12,19 +12,25 @@ Three-tier system:
 
 ```
 Browser (Blazor WASM PWA)
-  └── GET /api/nightplan?city=&lat=&lon=&housing=
+  ├── GET api.open-meteo.com (free, no key) — fetched client-side from the
+  │     USER's IP to avoid the shared-host 429 rate-limit
+  └── POST /api/nightplan  { city, housing, hourlyTemps[], hourlyHumidity[], sunrise[] }
         └── CoolSleep.Api (ASP.NET Core 10, port 5000)
-              ├── OpenMeteoClient → api.open-meteo.com (free, no key)
-              │     slices hours 18h→09h next day (16 data points)
+              ├── NightPlanHandler slices hours 18h→09h next day (16 data points)
               └── ThermalClient → POST /thermal/compute
                     └── Python FastAPI (port 8000)
                           └── NumPy thermal inertia model
               └── NightPlanEngine.Build() → risk score + action list
 ```
 
+**Why weather is fetched client-side**: Open-Meteo rate-limits per IP. On a shared
+host (Render free tier) the server's egress IP gets 429'd by other tenants, so the
+Blazor app fetches the forecast directly (per-user IP quota) and forwards the raw
+hourly arrays to the API.
+
 **C# API** (`src/CoolSleep.Api`) follows vertical slice architecture:
 - `Core/` — domain enums, `HeatIndexCalculator` (Steadman/NOAA), `NightPlanEngine`
-- `Features/NightPlan/` — endpoint, handler, both HTTP clients, request/response records
+- `Features/NightPlan/` — endpoint, handler, `ThermalClient`, request/response records
 
 **Python service** (`python/thermal/`) is a pure computation microservice:
 - `schemas.py` — Pydantic models and `HousingType` enum (snake_case strings)

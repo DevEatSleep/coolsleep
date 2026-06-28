@@ -1,18 +1,23 @@
 namespace CoolSleep.Api.Features.NightPlan;
 
+using System.Globalization;
 using CoolSleep.Api.Core;
 
-public sealed class NightPlanHandler(
-    OpenMeteoClient openMeteo,
-    ThermalClient   thermal)
+public sealed class NightPlanHandler(ThermalClient thermal)
 {
     public async Task<NightPlanResponse> HandleAsync(
         NightPlanRequest  request,
         CancellationToken ct = default)
     {
-        // 1. Météo horaire Open-Meteo
-        var (temps, daytimeTemps, humidity, sunrise) = await openMeteo.GetNightForecastAsync(
-            request.Lat, request.Lon, ct);
+        // 1. Découpage de la météo horaire fournie par le navigateur
+        //    Heures 10→17 jour J (8 valeurs pour le warmup diurne)
+        var daytimeTemps = request.HourlyTemps.Skip(10).Take(8).ToList();
+        //    Heures 18→33 (18h jour J → 09h jour J+1)
+        var temps    = request.HourlyTemps.Skip(18).Take(16).ToList();
+        var humidity = request.HourlyHumidity.Skip(18).Take(16).ToList();
+        //    Lever du soleil J+1 : "2024-06-25T05:48" ou "2024-06-25T05:48:00"
+        var sunrise  = TimeOnly.FromDateTime(
+            DateTime.Parse(request.Sunrise[1], CultureInfo.InvariantCulture));
 
         // 2. Calcul thermique (micro-service Python)
         var thermalResult = await thermal.ComputeAsync(

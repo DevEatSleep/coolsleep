@@ -7,23 +7,21 @@ public static class NightPlanEndpoint
     public static IEndpointRouteBuilder MapNightPlan(
         this IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/nightplan", async (
-            string           city,
-            double           lat,
-            double           lon,
-            string           housing,
-            NightPlanHandler handler,
-            CancellationToken ct,
-            bool?            volets               = null,
-            double?          indoor_temp_start    = null) =>
+        app.MapPost("/api/nightplan", async (
+            NightPlanRequestBody body,
+            NightPlanHandler     handler,
+            CancellationToken    ct) =>
         {
-            if (!Enum.TryParse<HousingType>(housing, ignoreCase: true, out var housingType))
-                return Results.BadRequest($"Invalid housing type: {housing}");
+            if (!Enum.TryParse<HousingType>(body.Housing, ignoreCase: true, out var housingType))
+                return Results.BadRequest($"Invalid housing type: {body.Housing}");
+
+            if (body.HourlyTemps.Count < 34 || body.HourlyHumidity.Count < 34 || body.Sunrise.Count < 2)
+                return Results.BadRequest("Incomplete forecast: expected at least 34 hourly values and 2 sunrise entries.");
 
             var request = new NightPlanRequest(
-                city, lat, lon, housingType,
-                volets ?? true,
-                indoor_temp_start ?? 24.0);
+                body.City, housingType,
+                body.HourlyTemps, body.HourlyHumidity, body.Sunrise,
+                body.VoletsFermes, body.IndoorTempStart);
 
             try
             {
@@ -34,7 +32,7 @@ public static class NightPlanEndpoint
             {
                 return Results.Problem(
                     title:      "Upstream service unavailable",
-                    detail:     "Weather data is temporarily unavailable, please retry in a moment.",
+                    detail:     "The thermal service is temporarily unavailable, please retry in a moment.",
                     statusCode: StatusCodes.Status503ServiceUnavailable);
             }
         })
