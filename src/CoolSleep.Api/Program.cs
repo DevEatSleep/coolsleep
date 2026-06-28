@@ -10,8 +10,10 @@ builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
     p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
 
 // ── Feature : NightPlan ───────────────────────────
+builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient();
-builder.Services.AddHttpClient<OpenMeteoClient>();
+builder.Services.AddHttpClient<OpenMeteoClient>(c =>
+    c.DefaultRequestHeaders.UserAgent.ParseAdd("CoolSleep/1.0 (+https://coolsleep.onrender.com)"));
 
 builder.Services.AddHttpClient<ThermalClient>(c =>
 {
