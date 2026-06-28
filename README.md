@@ -21,7 +21,7 @@ During a heatwave, outdoor temperatures can stay dangerously high well into the 
 ### How to Use
 
 1. Open CoolSleep at [https://coolsleep.onrender.com](https://coolsleep.onrender.com)
-2. Enter your city or GPS coordinates
+2. Select your city or use your GPS coordinates
 3. Select your housing type (apartment, house, etc.)
 4. Get a personalized cooling plan with:
 
