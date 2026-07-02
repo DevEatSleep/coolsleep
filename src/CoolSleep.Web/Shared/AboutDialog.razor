@@ -1,4 +1,5 @@
 @using System.Reflection
+@inject HttpClient Http
 
 <MudDialog>
     <DialogContent>
@@ -24,6 +25,27 @@
 @code {
     [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
 
-    private string AppVersion { get; } =
-        typeof(AboutDialog).Assembly.GetName().Version?.ToString(3) ?? "1.0.0";
+    private string AppVersion { get; set; } = "1.0.0";
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var response = await Http.GetAsync("/version.json");
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync();
+                // Simple JSON parsing: extract "version": "X.Y.Z"
+                var match = System.Text.RegularExpressions.Regex.Match(json, @"""version"":\s*""([^""]+)""");
+                if (match.Success)
+                {
+                    AppVersion = match.Groups[1].Value;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to fetch version.json: {ex.Message}");
+        }
+    }
 }
