@@ -3,11 +3,17 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <title>CoolSleep</title>
     <base href="/" />
     <link rel="manifest" href="manifest.json" />
     <meta name="theme-color" content="#070F1C" />
     <meta name="description" content="Optimisez votre nuit de chaleur" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="CoolSleep" />
     <style>
         * {
             margin: 0;
@@ -39,6 +45,69 @@
         <a href="" class="reload">Reload</a>
         <a class="dismiss">🗙</a>
     </div>
+
+    <script>
+        // ── Version check & cache invalidation ──────────────────────────────
+        // Sur iOS PWA (home screen), Safari cache très agressivement. On force
+        // un rechargement complet quand version.json change (single source of truth).
+        (async function checkVersion() {
+            try {
+                // Bypass HTTP cache with a timestamp query param
+                const response = await fetch('/version.json?t=' + Date.now(), {
+                    cache: 'no-store',
+                    headers: { 'Cache-Control': 'no-cache' }
+                });
+                if (!response.ok) return;
+
+                const data = await response.json();
+                const currentVersion = data.version;
+                const storedVersion = localStorage.getItem('app-version');
+
+                if (storedVersion && storedVersion !== currentVersion) {
+                    console.log(`[Version] Update detected: ${storedVersion} → ${currentVersion}`);
+
+                    // Unregister all service workers
+                    if ('serviceWorker' in navigator) {
+                        const registrations = await navigator.serviceWorker.getRegistrations();
+                        for (const reg of registrations) {
+                            await reg.unregister();
+                        }
+                    }
+
+                    // Clear all caches
+                    if ('caches' in window) {
+                        const cacheNames = await caches.keys();
+                        await Promise.all(cacheNames.map(name => caches.delete(name)));
+                    }
+
+                    localStorage.setItem('app-version', currentVersion);
+
+                    // Force full reload (bypass HTTP cache)
+                    window.location.reload();
+                    return;
+                }
+
+                localStorage.setItem('app-version', currentVersion);
+            } catch (err) {
+                console.warn('[Version] Check failed:', err);
+            }
+        })();
+
+        // ── Service worker registration ─────────────────────────────────────
+        // updateViaCache: 'none' → the SW file itself is never cached, so
+        // browser always fetches the latest version on registration check.
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js', { updateViaCache: 'none' })
+                    .then(reg => {
+                        console.log('[SW] Registered:', reg.scope);
+                        // Check for updates every hour when app is open
+                        setInterval(() => reg.update(), 60 * 60 * 1000);
+                    })
+                    .catch(err => console.warn('[SW] Registration failed:', err));
+            });
+        }
+    </script>
 
     <script src="_framework/blazor.webassembly.js"></script>
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
