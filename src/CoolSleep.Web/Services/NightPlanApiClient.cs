@@ -9,7 +9,7 @@ public sealed class NightPlanApiClient(HttpClient http)
 {
     public async Task<NightPlanModel?> GetAsync(
         string city, double lat, double lon, string housing, bool voletsFermes = true,
-        double indoorTempStart = 24.0)
+        double indoorTempStart = 24.0, bool debug = false)
     {
         // 1. Météo récupérée directement depuis le navigateur de l'utilisateur :
         //    la requête part de SON IP (quota Open-Meteo dédié), pas de l'IP
@@ -33,7 +33,8 @@ public sealed class NightPlanApiClient(HttpClient http)
             HourlyHumidity:  meteo.Hourly.Relativehumidity2m,
             Sunrise:         meteo.Daily.Sunrise,
             VoletsFermes:    voletsFermes,
-            IndoorTempStart: indoorTempStart);
+            IndoorTempStart: indoorTempStart,
+            Debug:           debug);
 
         var response = await http.PostAsJsonAsync("api/nightplan", body);
         response.EnsureSuccessStatusCode();
@@ -48,7 +49,8 @@ public sealed class NightPlanApiClient(HttpClient http)
         List<double> HourlyHumidity,
         List<string> Sunrise,
         bool         VoletsFermes,
-        double       IndoorTempStart);
+        double       IndoorTempStart,
+        bool         Debug);
 
     // ── Réponse Open-Meteo ────────────────────────────────────────────────
     private sealed record OpenMeteoResponse(HourlyPayload Hourly, DailyPayload Daily);

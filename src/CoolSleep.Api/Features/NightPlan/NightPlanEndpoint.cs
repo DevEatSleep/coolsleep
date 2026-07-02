@@ -21,7 +21,7 @@ public static class NightPlanEndpoint
             var request = new NightPlanRequest(
                 body.City, housingType,
                 body.HourlyTemps, body.HourlyHumidity, body.Sunrise,
-                body.VoletsFermes, body.IndoorTempStart);
+                body.VoletsFermes, body.IndoorTempStart, body.Debug);
 
             try
             {

@@ -19,6 +19,7 @@ class ThermalRequest(BaseModel):
     housing:            HousingType
     indoor_temp_start:  float = 24.0  # T_int mesurée le matin (avant la chauffe)
     volets_fermes:      bool  = True  # volets fermés pendant la journée
+    debug:              bool  = False # log indoor/outdoor temps to console
 
     @model_validator(mode="after")
     def check_lengths(self) -> "ThermalRequest":

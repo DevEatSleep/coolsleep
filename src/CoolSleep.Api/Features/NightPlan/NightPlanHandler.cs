@@ -24,6 +24,7 @@ public sealed class NightPlanHandler(ThermalClient thermal)
             temps, daytimeTemps, humidity, request.Housing,
             voletsFermes: request.VoletsFermes,
             indoorTempStart: request.IndoorTempStart,
+            debug: request.Debug,
             ct: ct);
 
         // 3. Construction du plan (Core)

@@ -10,7 +10,8 @@ public sealed record NightPlanRequest(
     List<double> HourlyHumidity,
     List<string> Sunrise,
     bool         VoletsFermes    = true,
-    double       IndoorTempStart = 24.0);
+    double       IndoorTempStart = 24.0,
+    bool         Debug           = false);
 
 // DTO de transport (housing en string, validé dans l'endpoint).
 public sealed record NightPlanRequestBody(
@@ -20,4 +21,5 @@ public sealed record NightPlanRequestBody(
     List<double> HourlyHumidity,
     List<string> Sunrise,
     bool         VoletsFermes    = true,
-    double       IndoorTempStart = 24.0);
+    double       IndoorTempStart = 24.0,
+    bool         Debug           = false);

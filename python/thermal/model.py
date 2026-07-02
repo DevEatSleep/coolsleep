@@ -155,6 +155,12 @@ def compute_indoor_temps(req: ThermalRequest) -> ThermalResponse:
     temps = np.array(req.hourly_temps)
     rh    = np.array(req.hourly_humidity)
     n     = len(temps)
+    
+    if req.debug:
+        print("\n=== DEBUG: Thermal Calculation ===")
+        print(f"Housing: {req.housing.value}")
+        print(f"Alpha (inertia): {alpha}, Lag: {lag}h")
+        print(f"Volets fermés (warmup): {req.volets_fermes}")
 
     # ── 1. Warmup diurne avec températures réelles 10h–17h ─────────────────
     # Cas climatisé : T_int est pilotée par le thermostat, le warmup ne s'applique pas.
@@ -169,6 +175,21 @@ def compute_indoor_temps(req: ThermalRequest) -> ThermalResponse:
 
     # ── 3. Baseline — fenêtres toujours fermées (RC pur, sans ventilation) ──
     indoor_baseline = _simulate(temps, t_at_18h, alpha, lag)
+    
+    if req.debug:
+        print(f"\nT_int at 18h: {round(t_at_18h, 1)}°C")
+        print(f"\n{'Hour':<6} {'Time':<8} {'T_out':<8} {'T_in':<8} {'T_base':<8} {'Delta':<8} {'RH':<6} {'HI':<8}")
+        print("-" * 70)
+        for i in range(n):
+            hour = (START_HOUR + i) % 24
+            delta = indoor[i] - temps[i]
+            hi = _heat_index(float(temps[i]), float(rh[i]))
+            open_rec = "OPEN" if delta >= DELTA_OPEN_MIN else ""
+            print(f"{i:<6} {hour:02d}:00    {temps[i]:<8.1f} {indoor[i]:<8.1f} {indoor_baseline[i]:<8.1f} {delta:<8.1f} {rh[i]:<6.1f} {hi:<8.1f} {open_rec}")
+        print("-" * 70)
+        print(f"Min indoor (ventilated): {round(float(indoor.min()), 1)}°C")
+        print(f"Min indoor (baseline):   {round(float(indoor_baseline.min()), 1)}°C")
+        print(f"Gain vs baseline: {round(float(indoor_baseline.min()) - float(indoor.min()), 1)}°C\n")
 
     # ── 4. Construction des données horaires ────────────────────────────────
     hours_data: list[HourlyThermal] = [

@@ -57,6 +57,9 @@
                          Placeholder="24" Min="10" Max="40"
                          HelperText="Mesurée avant 10h, quand vous vous levez — laissez vide si vous n'avez pas de thermomètre" />
 
+        @* Debug toggle removed from UI. To enable thermal calculation logs in the Python
+           service console, set the `debug` field below to `true` and rebuild. *@
+
         <MudButton FullWidth Variant="Variant.Filled" Color="Color.Primary"
                    Size="Size.Large" OnClick="Calculate" Class="mb-2">
             Calculer mon plan de nuit
@@ -71,6 +74,39 @@
         {
             <MudAlert Severity="Severity.Error" Class="mt-4">@error</MudAlert>
         }
+    }
+    else if (IsCoolNight)
+    {
+        @* Nuit fraîche : pas de plan nécessaire, écran minimaliste *@
+        <div style="text-align: center; padding: 2rem 0 1rem 0;">
+            <MudIcon Icon="@Icons.Material.Filled.Bedtime"
+                     Style="font-size: 4rem; color: #7EB6FF; opacity: 0.85;" />
+        </div>
+
+        <MudText Class="mb-2 text-center" style="font-size: 1.5rem; font-weight: 500;">
+            Bonne nuit fraîche
+        </MudText>
+
+        <MudText Class="mb-4 text-center" Typo="Typo.body2" Style="opacity: 0.7; line-height: 1.5;">
+            Aucun plan nécessaire ce soir — il fait bon dehors comme dedans.
+            Ouvrez vos fenêtres quand vous le souhaitez.
+        </MudText>
+
+        <div style="text-align: center; opacity: 0.6; font-size: 0.85rem; margin-bottom: 0.5rem; letter-spacing: 0.02em;">
+            @result!.City &nbsp;·&nbsp; @HousingLabel
+        </div>
+
+        <div style="text-align: center; opacity: 0.55; font-size: 0.85rem; margin-bottom: 2rem;">
+            Dehors : @result.MinOutdoorTemp.ToString("F1")°C min &nbsp;·&nbsp; @result.AvgHumidity% d'humidité
+        </div>
+
+        <div class="reset-area">
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                       Size="Size.Medium" OnClick="Reset"
+                       StartIcon="@Icons.Material.Filled.ArrowBack">
+                Retour
+            </MudButton>
+        </div>
     }
     else
     {
@@ -247,6 +283,10 @@
     private string     housing           = "AppartBas";
     private bool       voletsFermes      = true;
     private double?    indoorTempStart   = null;
+    // Debug flag forwarded to the Python thermal service. Toggle to `true` here
+    // to print the hourly indoor/outdoor/baseline table in the service console.
+    // No UI switch is exposed — this is a developer-only knob.
+    private bool       debug             = false;
     private bool       loading           = false;
     private string?    error             = null;
     private NightPlanModel? result  = null;
@@ -258,7 +298,9 @@
     // ── Gain thermique ──────────────────────────────────────────────────────
     private double Gain            => result is null ? 0 : result.BaselineMinIndoorTemp - result.MinIndoorTemp;
     private bool   GainSignificatif => Gain >= GainSeuil;
-
+    // Nuit fraîche : le heat index max reste sous 27°C → RiskLevel.Normal.
+    // Aucun plan n'est nécessaire, on affiche un écran rassurant à la place.
+    private bool   IsCoolNight     => result?.RiskLevel == "Normal";
     private string TempIntTooltip => GainSignificatif
         ? $"En suivant le plan, vous gagnez {Gain:F1}°C vs fenêtres fermées toute la nuit."
         : "Cette nuit, ouvrir les fenêtres n'apporte pas de gain thermique mesurable.";
@@ -346,7 +388,7 @@
             double lat  = gpsLat ?? selectedCity.Lat;
             double lon  = gpsLon ?? selectedCity.Lon;
             string city = gpsLabel ?? selectedCity.Name;
-            result = await Client.GetAsync(city, lat, lon, housing, voletsFermes, indoorTempStart ?? 24.0);
+            result = await Client.GetAsync(city, lat, lon, housing, voletsFermes, indoorTempStart ?? 24.0, debug);
             if (result == null) error = "Erreur: pas de réponse du serveur";
         }
         catch (Exception ex)

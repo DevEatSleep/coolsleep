@@ -13,6 +13,7 @@ public class ThermalClient(HttpClient http)
         HousingType       housing,
         bool              voletsFermes    = true,
         double            indoorTempStart = 24.0,
+        bool              debug           = false,
         CancellationToken ct              = default)
     {
         var payload = new
@@ -22,7 +23,8 @@ public class ThermalClient(HttpClient http)
             hourly_humidity    = humidity,
             housing            = housing.ToSnakeCase(),
             volets_fermes      = voletsFermes,
-            indoor_temp_start  = indoorTempStart
+            indoor_temp_start  = indoorTempStart,
+            debug              = debug
         };
 
         const int maxAttempts = 3;
