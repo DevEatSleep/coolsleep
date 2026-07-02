@@ -236,6 +236,43 @@
             </MudExpansionPanel>
         </MudExpansionPanels>
 
+        @* Zone 5 : Activer les rappels *@
+        <div style="text-align: center; margin: 1.5rem 0 0.5rem 0;">
+            @if (notificationPermission == "unsupported")
+            {
+                <div style="opacity: 0.5; font-size: 0.75rem;">
+                    Notifications non supportées sur ce navigateur
+                </div>
+            }
+            else if (notificationPermission == "denied")
+            {
+                <div style="opacity: 0.6; font-size: 0.8rem;">
+                    Notifications bloquées — activez-les dans les réglages du navigateur
+                </div>
+            }
+            else if (notificationsScheduled > 0)
+            {
+                <MudChip T="string" Icon="@Icons.Material.Filled.CheckCircle"
+                         Color="Color.Success" Variant="Variant.Text">
+                    @notificationsScheduled rappel(s) programmé(s)
+                </MudChip>
+                <div style="opacity: 0.5; font-size: 0.75rem; margin-top: 0.25rem;">
+                    Laissez l'app ouverte en arrière-plan
+                </div>
+            }
+            else
+            {
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                           Size="Size.Medium" OnClick="EnableNotifications"
+                           StartIcon="@Icons.Material.Filled.NotificationsActive">
+                    Activer les rappels
+                </MudButton>
+                <div style="opacity: 0.5; font-size: 0.75rem; margin-top: 0.5rem;">
+                    Recevez une notification à chaque action du plan
+                </div>
+            }
+        </div>
+
         @* Zone 6 : Recalculer *@
         <div class="reset-area">
             <MudButton Variant="Variant.Outlined" Color="Color.Primary"
@@ -294,6 +331,10 @@
     private double?    gpsLon;
     private string?    gpsLabel;
     private bool       gpsLoading   = false;
+
+    // ── Notifications ───────────────────────────────────────────────────────
+    private int    notificationsScheduled = 0;
+    private string notificationPermission = "default";
 
     // ── Gain thermique ──────────────────────────────────────────────────────
     private double Gain            => result is null ? 0 : result.BaselineMinIndoorTemp - result.MinIndoorTemp;
@@ -408,6 +449,33 @@
         gpsLat   = null;
         gpsLon   = null;
         gpsLabel = null;
+        notificationsScheduled = 0;
+        _ = JS.InvokeVoidAsync("cancelScheduledNotifications");
+    }
+
+    // ── Notifications ───────────────────────────────────────────────────────
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            notificationPermission = await JS.InvokeAsync<string>("getNotificationPermission");
+            StateHasChanged();
+        }
+    }
+
+    private async Task EnableNotifications()
+    {
+        var perm = await JS.InvokeAsync<string>("requestNotificationPermission");
+        notificationPermission = perm;
+
+        if (perm == "granted" && result?.Actions != null)
+        {
+            var payload = result.Actions
+                .Select(a => new { hour = a.Hour, label = a.Label, detail = a.Detail })
+                .ToArray();
+            notificationsScheduled = await JS.InvokeAsync<int>(
+                "scheduleNightPlanNotifications", (object)payload);
+        }
     }
 
     private async Task UseGps()
