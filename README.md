@@ -40,6 +40,32 @@ For Paris during a heatwave with morning temperature of 24°C:
 - **04:00** — Close windows (temperature rising)
 - **06:00** — Reopen windows to store coolness before heat
 
+### Recent Features
+
+#### 🌙 Cool Night Detection
+
+When forecasted conditions are mild (outdoor temp > 20°C, heat index < 27°C), CoolSleep displays a simplified screen: "Bonne nuit fraîche" — no plan needed. Just open your windows as desired.
+
+#### 🔔 Local Notifications
+
+When viewing a hot-night plan, click **"Activer les rappels"** to schedule browser notifications for each action:
+- Reminders trigger at the exact hour of each action
+- Requires the app to remain open in the background
+- Works on iOS PWA (home screen icon) and Android
+
+#### 🔄 Version Management
+
+Version is defined once in `wwwroot/version.json` and read by:
+- The About dialog (shows `v1.0.0`)
+- The service worker (cache key: `coolsleep-v1.0.0`)
+- The browser version check on startup (forces reload if version changes)
+
+To deploy an update, bump the version in `version.json` — users will auto-update on next visit (PWA).
+
+#### 🐛 Debug Mode
+
+Add `debug: true` in the thermal request body to log hourly indoor/outdoor/baseline temperatures to the Python service console. Useful for validating the thermal model. Code-only flag (no UI toggle).
+
 ---
 
 ## For Developers
@@ -193,7 +219,8 @@ Content-Type: application/json
   "hourlyHumidity": [60, 61, 62, ..., 50, 52, 54],
   "sunrise": ["2026-06-28T06:00", "2026-06-29T06:00"],
   "voletsFermes": true,
-  "indoorTempStart": 24.0
+  "indoorTempStart": 24.0,
+  "debug": false
 }
 ```
 
@@ -228,6 +255,12 @@ Content-Type: application/json
 
 - **Testing approach**: C# tests use concrete subclasses, not mocks. `OpenMeteoClient` and `ThermalClient` have `virtual` methods that file-scoped fakes override in test files. Do not introduce `NSubstitute` mocks or interfaces.
 
+- **Thermal Model**: The Python model computes two simulations:
+  - **Optimal (ventilated)**: Windows open when beneficial (`T_in - T_ext >= 1.5°C`)
+  - **Baseline (closed)**: Windows always closed (RC model with thermal inertia)
+  
+  The `gain` displayed to users is `baseline_min - optimal_min`. On cool nights (heat index < 27°C), no plan is shown; the cool night screen displays the baseline minimum temperature instead.
+
 ---
 
 ## Deployment
@@ -246,3 +279,10 @@ All services run on **Render** (single containerized deployment for cost efficie
 - Blazor WASM fetches Open-Meteo weather from the browser (user's IP) to avoid shared-host rate limits
 - Health check at `/health` monitors both the API and the thermal microservice
 - All three processes (nginx, .NET, Python) start via supervisord with proper ordering
+
+**PWA Updates (iOS/Android):**
+
+- Service worker is registered with `updateViaCache: 'none'` (browser fetches latest SW file on every visit)
+- Version check runs on app startup; if `version.json` has changed, clears all caches and reloads
+- Cache key includes version string (`coolsleep-v1.0.0`), so each deployment auto-invalidates old caches
+- This ensures users see the latest code within minutes of deployment, even on iOS home screen PWA
