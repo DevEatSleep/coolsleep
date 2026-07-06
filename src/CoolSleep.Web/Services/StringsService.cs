@@ -2,6 +2,7 @@ namespace CoolSleep.Web.Services;
 
 using System.Net.Http.Json;
 using System.Text.Json;
+using CoolSleep.Web.Models;
 using Microsoft.AspNetCore.Components;
 
 public class StringsService(NavigationManager nav) : IAsyncInitialize
@@ -74,6 +75,12 @@ public class StringsService(NavigationManager nav) : IAsyncInitialize
             return $"[actions.{messageKey}.detail]";
         }
     }
+
+    public string ActionLabel(NightActionModel action) =>
+        action.Label ?? ActionLabel(action.MessageKey, action.Params);
+
+    public string ActionDetail(NightActionModel action) =>
+        action.Detail ?? ActionDetail(action.MessageKey, action.Params);
 
     private static string Interpolate(string template, IReadOnlyDictionary<string, double>? @params)
     {
