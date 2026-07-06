@@ -153,8 +153,8 @@
                     {
                         var (icon, color) = getIconAndColor(action.ActionType);
                         <MudTimelineItem Icon="@icon" Color="color">
-                            <div style="font-weight: 500;">@($"{action.Hour}:00") - @Str.ActionLabel(action.MessageKey, action.Params)</div>
-                            <div style="opacity: 0.7; font-size: 0.9rem;">@Str.ActionDetail(action.MessageKey, action.Params)</div>
+                            <div style="font-weight: 500;">@($"{action.Hour}:00") - @Str.ActionLabel(action)</div>
+                            <div style="opacity: 0.7; font-size: 0.9rem;">@Str.ActionDetail(action)</div>
                         </MudTimelineItem>
                     }
                 </MudTimeline>
@@ -403,11 +403,11 @@
 
     private string GpsButtonLabel  => NextAction is null
         ? Str.Get("ui", "gps_done_label")
-        : Str.ActionLabel(NextAction.MessageKey, NextAction.Params);
+        : Str.ActionLabel(NextAction);
     private string GpsButtonDetail =>
         NextAction is null
             ? Str.Get("ui", "gps_done_detail")
-            : $"À {NextAction.Hour}h00 · {Str.ActionDetail(NextAction.MessageKey, NextAction.Params)}";
+            : $"À {NextAction.Hour}h00 · {Str.ActionDetail(NextAction)}";
 
     private (string Icon, Color Color) GpsButtonIconAndColor =>
         NextAction is null
@@ -480,8 +480,8 @@
                 .Select(a => new
                 {
                     hour = a.Hour,
-                    label = Str.ActionLabel(a.MessageKey, a.Params),
-                    detail = Str.ActionDetail(a.MessageKey, a.Params)
+                    label = Str.ActionLabel(a),
+                    detail = Str.ActionDetail(a)
                 })
                 .ToArray();
             notificationsScheduled = await JS.InvokeAsync<int>(

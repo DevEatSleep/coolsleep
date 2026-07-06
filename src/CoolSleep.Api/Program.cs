@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using CoolSleep.Api.Features.NightPlan;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,6 +19,17 @@ builder.Services.AddHttpClient<ThermalClient>(c =>
 {
     c.BaseAddress = new Uri(builder.Configuration["ThermalService:BaseUrl"] ?? "http://localhost:8000");
     c.Timeout = TimeSpan.FromSeconds(25);
+});
+
+// Personnalisation des messages via Mistral — appel best-effort, timeout court :
+// ne doit jamais ralentir/faire échouer la requête /api/nightplan.
+builder.Services.AddHttpClient<MistralClient>(c =>
+{
+    c.BaseAddress = new Uri(builder.Configuration["Mistral:BaseUrl"] ?? "https://api.mistral.ai");
+    c.Timeout = TimeSpan.FromSeconds(builder.Configuration.GetValue("Mistral:TimeoutSeconds", 5));
+    var apiKey = builder.Configuration["Mistral:ApiKey"];
+    if (!string.IsNullOrEmpty(apiKey))
+        c.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
 });
 
 builder.Services.AddScoped<NightPlanHandler>();
