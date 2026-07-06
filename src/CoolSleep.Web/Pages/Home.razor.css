@@ -2,6 +2,12 @@
     display: none;
 }
 
+/* iOS Safari auto-zooms the viewport on focus when an input's font-size is
+   below 16px. Pin it to 16px so tapping the field doesn't resize the display. */
+::deep .indoor-temp-field input {
+    font-size: 16px;
+}
+
 /* Arc gauge */
 .arc-container {
     position: relative;
