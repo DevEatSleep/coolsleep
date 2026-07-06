@@ -148,4 +148,15 @@ public class NightPlanEngineTests
             morningCloseHour: 4);
         plan.Actions.Should().NotContain(a => a.ActionType == ActionType.FermerMatin);
     }
+
+    [Fact]
+    public void Build_NoFermerFenetres_WhenOpenHourEqualsCloseHour()
+    {
+        // openHour == closeHour → pas d'action de fermeture au même heure que l'ouverture (impossible)
+        var plan = NightPlanEngine.Build("Morsang", SampleHours, 4, 4, 21.5);
+        plan.Actions.Should().NotContain(a =>
+            a.Hour == 4 && a.ActionType == ActionType.FermerFenetres);
+        plan.Actions.Should().Contain(a =>
+            a.Hour == 4 && a.ActionType == ActionType.OuvrirFenetres);
+    }
 }

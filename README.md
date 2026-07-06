@@ -52,15 +52,35 @@ When viewing a hot-night plan, click **"Activer les rappels"** to schedule brows
 - Reminders trigger at the exact hour of each action
 - Requires the app to remain open in the background
 - Works on iOS PWA (home screen icon) and Android
+- Geolocation support for timezone-aware alert timing
 
-#### 🔄 Version Management
+#### 🔄 Version Management & PWA Updates
 
 Version is defined once in `wwwroot/version.json` and read by:
 - The About dialog (shows `v1.0.0`)
 - The service worker (cache key: `coolsleep-v1.0.0`)
 - The browser version check on startup (forces reload if version changes)
 
-To deploy an update, bump the version in `version.json` — users will auto-update on next visit (PWA).
+To deploy an update, bump the version in `version.json` — users will auto-update on next visit (PWA). iOS PWA updates are handled via improved service worker strategy with `updateViaCache: 'none'`.
+
+#### 🎨 App Icons & PWA Integration
+
+Multiple icon sizes (16×16, 32×32, 192×192, 180×180, 512×512) are bundled for optimal display on mobile home screens (iOS) and Android app drawers. Icons are referenced in `manifest.json` and `index.html`.
+
+#### 🌍 Internationalization (i18n)
+
+All user-facing strings are now centralized in `wwwroot/i18n/fr.json` and loaded at runtime via `StringsService`:
+- Action labels and details support parameter interpolation (e.g., `{outdoorTemp}`, `{indoorTemp}`)
+- Future-proof architecture for supporting multiple languages
+- Service provides `Get(section, key)`, `ActionLabel(messageKey, params)`, and `ActionDetail(messageKey, params)` methods
+
+#### 🔬 Improved Thermal Model
+
+Recent refinements to the thermal inertia calculation:
+- Better distinction between different closure strategies (`FermerFenetres_Rising` vs `FermerFenetres_Equalized`)
+- Nighttime ventilation actions with alarm hours for optimal coolness extraction
+- Improved risk scoring that accounts for indoor temperature trajectory
+- More granular action recommendations for apartment basements, top-floor apartments, and detached houses
 
 #### 🐛 Debug Mode
 
