@@ -1,5 +1,6 @@
 @using System.Reflection
 @inject HttpClient Http
+@inject StringsService Str
 
 <MudDialog>
     <DialogContent>
@@ -9,7 +10,7 @@
                 v@(AppVersion)
             </MudText>
             <MudDivider Class="my-2" />
-            <MudText>Par Thierry Verdier</MudText>
+            <MudText>@Str.Get("about", "by")</MudText>
             <MudLink Href="https://github.com/DevEatSleep/" Target="_blank">
                 github.com/DevEatSleep
             </MudLink>
@@ -17,7 +18,7 @@
     </DialogContent>
     <DialogActions>
         <MudButton Variant="Variant.Text" OnClick="@(() => MudDialog.Close())">
-            Fermer
+            @Str.Get("about", "close_button")
         </MudButton>
     </DialogActions>
 </MudDialog>

@@ -62,7 +62,7 @@ file sealed class FakeThermalClient()
     public override Task<ThermalResult> ComputeAsync(
         List<double> temps, List<double> daytimeTemps, List<double> humidity,
         HousingType housing, bool voletsFermes = true,
-        double indoorTempStart = 24.0, CancellationToken ct = default)
+        double indoorTempStart = 24.0, bool debug = false, CancellationToken ct = default)
         => Task.FromResult(new ThermalResult(
             Hours: temps.Select((t, i) => new ThermalHour(
                 (18 + i) % 24, t, t + 2,

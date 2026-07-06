@@ -76,8 +76,12 @@ public static class NightPlanEngine
             && (h18 is null || !h18.OpenWindowRecommended))
         {
             actions.Add(new(18,
-                "Fermez les volets",
-                $"Il fait {h18?.OutdoorTemp:F0}°C dehors et {h18?.IndoorTempEstimated:F0}°C chez vous — bloquez la chaleur maintenant.",
+                "FermerVolets",
+                new Dictionary<string, double>
+                {
+                    ["outdoorTemp"] = h18?.OutdoorTemp ?? 0,
+                    ["indoorTemp"] = h18?.IndoorTempEstimated ?? 0
+                },
                 ActionType.FermerVolets));
         }
 
@@ -85,8 +89,8 @@ public static class NightPlanEngine
         if (housing == HousingType.Climatise)
         {
             actions.Add(new(20,
-                "Réglez la climatisation à 26°C",
-                "En dessous, le choc thermique au réveil perturbe le cycle de sommeil.",
+                "ReglerClimatisation",
+                new Dictionary<string, double>(),
                 ActionType.ReglerClimatisation));
             return [.. actions];
         }
@@ -101,16 +105,23 @@ public static class NightPlanEngine
             {
                 windowWasOpened = true;
                 actions.Add(new(openHour.Value,
-                    "Ouvrez les fenêtres en grand",
-                    $"Il fait {outdoorTemp:F0}°C dehors contre {hOpen?.IndoorTempEstimated:F0}°C chez vous — créez un courant d'air traversant.",
+                    "OuvrirFenetres",
+                    new Dictionary<string, double>
+                    {
+                        ["outdoorTemp"] = outdoorTemp,
+                        ["indoorTemp"] = hOpen?.IndoorTempEstimated ?? 0
+                    },
                     ActionType.OuvrirFenetres));
             }
             else
             {
                 passiveCardEmitted = true;
                 actions.Add(new(openHour.Value,
-                    "Nuit sans fraîcheur exploitable",
-                    $"Il fait encore {outdoorTemp:F0}°C dehors — même inférieure à l'intérieur, l'air chaud dehors ne rafraîchit pas. Gardez les fenêtres fermées.",
+                    "NuitSansFraicheur",
+                    new Dictionary<string, double>
+                    {
+                        ["outdoorTemp"] = outdoorTemp
+                    },
                     ActionType.InformationSeulement));
             }
         }
@@ -142,13 +153,14 @@ public static class NightPlanEngine
             var extIsRising = hClose is not null
                            && hClose.OutdoorTemp > minExtInWindow + ExtRisingMargin;
 
-            var detail = extIsRising
-                ? $"La température extérieure remonte ({hClose?.OutdoorTemp:F0}°C) — fermez pour conserver la fraîcheur accumulée."
-                : $"La température intérieure a rejoint l'extérieur ({hClose?.OutdoorTemp:F0}°C) — les fenêtres ont fait leur travail, fermez.";
+            var messageKey = extIsRising ? "FermerFenetres_Rising" : "FermerFenetres_Equalized";
 
             actions.Add(new(closeHour.Value,
-                "Fermez les fenêtres",
-                detail,
+                messageKey,
+                new Dictionary<string, double>
+                {
+                    ["outdoorTemp"] = hClose?.OutdoorTemp ?? 0
+                },
                 ActionType.FermerFenetres));
         }
 
@@ -163,16 +175,24 @@ public static class NightPlanEngine
             && (atMin is null || atMin.OpenWindowRecommended))
         {
             actions.Add(new(minOutdoorHour,
-                $"Ventilation nocturne — réveil {minOutdoorHour}h",
-                $"Point le plus frais de la nuit : {atMin?.OutdoorTemp:F0}°C. Ouvrez 15 min toutes fenêtres pour purger la chaleur résiduelle.",
+                "RefraichissementNocturne",
+                new Dictionary<string, double>
+                {
+                    ["alarmHour"] = minOutdoorHour,
+                    ["outdoorTemp"] = atMin?.OutdoorTemp ?? 0
+                },
                 ActionType.RefraichissementNocturne));
         }
         else if (!isNocturnal && atMin is not null && !passiveCardEmitted && !cycleComplet)
         {
             passiveCardEmitted = true;
             actions.Add(new(minOutdoorHour,
-                "Nuit sans creux frais",
-                $"La température la plus basse ({atMin.OutdoorTemp:F0}°C) n'arrive qu'à {minOutdoorHour}h — gardez les fenêtres fermées.",
+                "NuitSansCreux",
+                new Dictionary<string, double>
+                {
+                    ["outdoorTemp"] = atMin.OutdoorTemp,
+                    ["alarmHour"] = minOutdoorHour
+                },
                 ActionType.InformationSeulement));
         }
 
@@ -185,8 +205,11 @@ public static class NightPlanEngine
             var hMorn = hours.FirstOrDefault(h => h.Hour == morningCloseHour);
 
             actions.Add(new(morningCloseHour.Value,
-                "Fermez — la fraîcheur s'arrête ici",
-                $"La température extérieure remonte ({hMorn?.OutdoorTemp:F0}°C) — refermez fenêtres et volets avant la chaleur du jour.",
+                "FermerMatin",
+                new Dictionary<string, double>
+                {
+                    ["outdoorTemp"] = hMorn?.OutdoorTemp ?? 0
+                },
                 ActionType.FermerMatin));
         }
 
@@ -198,8 +221,8 @@ public static class NightPlanEngine
         if (!hasActionableCard && !passiveCardEmitted)
         {
             actions.Add(new(20,
-                "Aucune action particulière cette nuit",
-                "Les températures nocturnes ne permettent pas d'améliorer significativement le confort. Gardez les fenêtres fermées et privilégiez un ventilateur.",
+                "AucuneAction",
+                new Dictionary<string, double>(),
                 ActionType.InformationSeulement));
         }
 
@@ -256,10 +279,10 @@ public sealed record NightPlan(
     IReadOnlyList<NightAction> Actions);
 
 public sealed record NightAction(
-    int        Hour,
-    string     Label,
-    string     Detail,
-    ActionType ActionType);
+    int                                   Hour,
+    string                                MessageKey,
+    IReadOnlyDictionary<string, double>   Params,
+    ActionType                            ActionType);
 
 public sealed record HourlyData(
     int    Hour,

@@ -3,17 +3,17 @@
 @inject IJSRuntime JS
 @inject HttpClient Http
 @inject IDialogService DialogService
+@inject StringsService Str
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="py-4">
     @if (result == null)
     {
         <MudText Class="mb-4 text-center" style="font-size: 1.5rem; font-weight: 500;">
-            Optimisez votre nuit de chaleur
+            @Str.Get("ui", "hero_title")
         </MudText>
 
         <MudText Class="mb-2 text-center" Typo="Typo.body2" Style="opacity: 0.65; line-height: 1.5;">
-            Renseignez votre ville et votre type de logement — CoolSleep calcule exactement
-            quand ouvrir et fermer vos fenêtres cette nuit pour rester au frais.
+            @Str.Get("ui", "hero_subtitle")
         </MudText>
 
         <div class="d-flex justify-center mb-4">
@@ -21,11 +21,11 @@
                        StartIcon="@Icons.Material.Outlined.HelpOutline"
                        OnClick="ShowHelp"
                        Style="opacity: 0.6; font-size: 0.8rem;">
-                Comment ça marche ?
+                @Str.Get("ui", "help_button")
             </MudButton>
         </div>
 
-        <MudSelect T="CityOption" @bind-Value="selectedCity" Label="Ville"
+        <MudSelect T="CityOption" @bind-Value="selectedCity" Label="@Str.Get("ui", "city_label")"
                    Variant="Variant.Outlined" Class="mb-4"
                    AnchorOrigin="Origin.BottomCenter" TransformOrigin="Origin.TopCenter">
             @foreach (var city in Cities)
@@ -37,10 +37,10 @@
         <MudButton FullWidth Variant="Variant.Outlined" Color="Color.Default"
                    Size="Size.Large" OnClick="UseGps" Class="mb-4" Disabled="gpsLoading"
                    StartIcon="@Icons.Material.Filled.MyLocation">
-            @(gpsLoading ? "Localisation en cours…" : (gpsLabel ?? "Utiliser ma position GPS"))
+            @(gpsLoading ? Str.Get("ui", "gps_loading") : (gpsLabel ?? Str.Get("ui", "use_gps")))
         </MudButton>
 
-        <MudSelect T="string" @bind-Value="housing" Label="Type de logement"
+        <MudSelect T="string" @bind-Value="housing" Label="@Str.Get("ui", "housing_label")"
                    Variant="Variant.Outlined" Class="mb-4"
                    AnchorOrigin="Origin.BottomCenter" TransformOrigin="Origin.TopCenter">
             @foreach (var opt in HousingOptions)
@@ -49,20 +49,20 @@
             }
         </MudSelect>
 
-        <MudSwitch @bind-Value="voletsFermes" Label="Volets fermés la journée"
+        <MudSwitch @bind-Value="voletsFermes" Label="@Str.Get("ui", "shutters_label")"
                    Color="Color.Primary" Class="mb-4" />
 
-        <MudNumericField @bind-Value="indoorTempStart" Label="Température intérieure ce matin (°C)"
+        <MudNumericField @bind-Value="indoorTempStart" Label="@Str.Get("ui", "indoor_temp_label")"
                          Variant="Variant.Outlined" Class="mb-4"
                          Placeholder="24" Min="10" Max="40"
-                         HelperText="Mesurée avant 10h, quand vous vous levez — laissez vide si vous n'avez pas de thermomètre" />
+                         HelperText="@Str.Get("ui", "indoor_temp_helper")" />
 
         @* Debug toggle removed from UI. To enable thermal calculation logs in the Python
            service console, set the `debug` field below to `true` and rebuild. *@
 
         <MudButton FullWidth Variant="Variant.Filled" Color="Color.Primary"
                    Size="Size.Large" OnClick="Calculate" Class="mb-2">
-            Calculer mon plan de nuit
+            @Str.Get("ui", "calculate_button")
         </MudButton>
 
         @if (loading)
@@ -84,12 +84,11 @@
         </div>
 
         <MudText Class="mb-2 text-center" style="font-size: 1.5rem; font-weight: 500;">
-            Bonne nuit fraîche
+            @Str.Get("ui", "cool_night_heading")
         </MudText>
 
         <MudText Class="mb-4 text-center" Typo="Typo.body2" Style="opacity: 0.7; line-height: 1.5;">
-            Aucun plan nécessaire ce soir — il fait bon dehors comme dedans.
-            Ouvrez vos fenêtres quand vous le souhaitez.
+            @Str.Get("ui", "cool_night_body")
         </MudText>
 
         <div style="text-align: center; opacity: 0.6; font-size: 0.85rem; margin-bottom: 0.5rem; letter-spacing: 0.02em;">
@@ -104,7 +103,7 @@
             <MudButton Variant="Variant.Outlined" Color="Color.Primary"
                        Size="Size.Medium" OnClick="Reset"
                        StartIcon="@Icons.Material.Filled.ArrowBack">
-                Retour
+                @Str.Get("ui", "back_button")
             </MudButton>
         </div>
     }
@@ -137,37 +136,38 @@
 
         @* Zone 2 : Bouton GPS — instruction impérative *@
         <button class="gps-action-btn">
-            <div class="gps-action-header">
-                <MudIcon Icon="@GpsButtonIconAndColor.Icon"
-                         Style="@($"font-size:2rem; color:{ArcColor}")" />
+            <MudIcon Icon="@GpsButtonIconAndColor.Icon"
+                     Style="@($"font-size:2rem; color:{ArcColor}")" />
+            <div class="gps-action-content">
                 <span class="gps-action-label">@GpsButtonLabel</span>
+                <div class="gps-action-detail">@GpsButtonDetail</div>
             </div>
-            <div class="gps-action-detail">@GpsButtonDetail</div>
         </button>
+        
 
         @* Zones 3-4 : Données secondaires repliées *@
         <MudExpansionPanels Elevation="0">
-            <MudExpansionPanel Text="Voir le plan complet">
+            <MudExpansionPanel Text="@Str.Get("ui", "full_plan")">
                 <MudTimeline TimelineAlign="TimelineAlign.Start">
                     @foreach (var action in result.Actions)
                     {
                         var (icon, color) = getIconAndColor(action.ActionType);
                         <MudTimelineItem Icon="@icon" Color="color">
-                            <div style="font-weight: 500;">@($"{action.Hour}:00") - @action.Label</div>
-                            <div style="opacity: 0.7; font-size: 0.9rem;">@action.Detail</div>
+                            <div style="font-weight: 500;">@($"{action.Hour}:00") - @Str.ActionLabel(action.MessageKey, action.Params)</div>
+                            <div style="opacity: 0.7; font-size: 0.9rem;">@Str.ActionDetail(action.MessageKey, action.Params)</div>
                         </MudTimelineItem>
                     }
                 </MudTimeline>
             </MudExpansionPanel>
 
-            <MudExpansionPanel Text="Données météo & températures">
+            <MudExpansionPanel Text="@Str.Get("ui", "weather_data")">
                 <MudGrid Class="mb-2">
 
                     @* T° intérieure min — affichage conditionnel selon gain *@
                     <MudItem xs="4">
                         <MudPaper Class="pa-4 text-center" Elevation="0">
                             <div class="d-flex justify-center align-center" style="gap: 4px;">
-                                <div style="opacity: 0.7; font-size: 0.875rem;">Chez vous</div>
+                                <div style="opacity: 0.7; font-size: 0.875rem;">@Str.Get("ui", "your_place")</div>
                                 <MudTooltip Text="@TempIntTooltip" Placement="Placement.Bottom">
                                     <MudIcon Icon="@Icons.Material.Outlined.Info"
                                              Size="Size.Small"
@@ -181,14 +181,14 @@
                             {
                                 @* Gain réel : afficher l'écart plutôt que la température brute *@
                                 <div style="opacity: 0.7; font-size: 0.75rem; margin-top: 2px; color: #4CAF50;">
-                                    ↓ @Gain.ToString("F1")°C vs fenêtres fermées
+                                    @Str.Get("ui", "gain_vs_baseline").Replace("{gainDegrees}", Gain.ToString("F1"))
                                 </div>
                             }
                             else
                             {
                                 @* Gain nul : message contextuel, pas de doublon de température *@
                                 <div style="opacity: 0.5; font-size: 0.75rem; margin-top: 2px;">
-                                    sans gain possible
+                                    @Str.Get("ui", "no_gain_possible")
                                 </div>
                             }
                         </MudPaper>
@@ -197,8 +197,8 @@
                     <MudItem xs="4">
                         <MudPaper Class="pa-4 text-center" Elevation="0">
                             <div class="d-flex justify-center align-center" style="gap: 4px;">
-                                <div style="opacity: 0.7; font-size: 0.875rem;">Dehors</div>
-                                <MudTooltip Text="Température extérieure minimale prévue cette nuit — c'est le plancher naturel vers lequel votre logement peut tendre."
+                                <div style="opacity: 0.7; font-size: 0.875rem;">@Str.Get("ui", "outside")</div>
+                                <MudTooltip Text="@Str.Get("ui", "outdoor_min_tooltip")"
                                             Placement="Placement.Bottom">
                                     <MudIcon Icon="@Icons.Material.Outlined.Info"
                                              Size="Size.Small"
@@ -209,7 +209,7 @@
                                 @result.MinOutdoorTemp.ToString("F1")°C
                             </div>
                             <div style="opacity: 0.5; font-size: 0.75rem; margin-top: 2px;">
-                                nocturne prévue
+                                @Str.Get("ui", "predicted_min")
                             </div>
                         </MudPaper>
                     </MudItem>
@@ -217,8 +217,8 @@
                     <MudItem xs="4">
                         <MudPaper Class="pa-4 text-center" Elevation="0">
                             <div class="d-flex justify-center align-center" style="gap: 4px;">
-                                <div style="opacity: 0.7; font-size: 0.875rem;">Humidité</div>
-                                <MudTooltip Text="Humidité relative moyenne cette nuit. Une humidité élevée amplifie la sensation de chaleur (indice de chaleur)."
+                                <div style="opacity: 0.7; font-size: 0.875rem;">@Str.Get("ui", "humidity")</div>
+                                <MudTooltip Text="@Str.Get("ui", "humidity_tooltip")"
                                             Placement="Placement.Bottom">
                                     <MudIcon Icon="@Icons.Material.Outlined.Info"
                                              Size="Size.Small"
@@ -227,7 +227,7 @@
                             </div>
                             <div style="font-size: 1.5rem; font-weight: 500;">@result.AvgHumidity%</div>
                             <div style="opacity: 0.5; font-size: 0.75rem; margin-top: 2px;">
-                                moyenne cette nuit
+                                @Str.Get("ui", "average_tonight")
                             </div>
                         </MudPaper>
                     </MudItem>
@@ -236,50 +236,54 @@
             </MudExpansionPanel>
         </MudExpansionPanels>
 
-        @* Zone 5 : Activer les rappels *@
-        <div style="text-align: center; margin: 1.5rem 0 0.5rem 0;">
-            @if (notificationPermission == "unsupported")
-            {
-                <div style="opacity: 0.5; font-size: 0.75rem;">
-                    Notifications non supportées sur ce navigateur
-                </div>
-            }
-            else if (notificationPermission == "denied")
-            {
-                <div style="opacity: 0.6; font-size: 0.8rem;">
-                    Notifications bloquées — activez-les dans les réglages du navigateur
-                </div>
-            }
-            else if (notificationsScheduled > 0)
-            {
-                <MudChip T="string" Icon="@Icons.Material.Filled.CheckCircle"
-                         Color="Color.Success" Variant="Variant.Text">
-                    @notificationsScheduled rappel(s) programmé(s)
-                </MudChip>
-                <div style="opacity: 0.5; font-size: 0.75rem; margin-top: 0.25rem;">
-                    Laissez l'app ouverte en arrière-plan
-                </div>
-            }
-            else
-            {
-                <MudButton Variant="Variant.Outlined" Color="Color.Primary"
-                           Size="Size.Medium" OnClick="EnableNotifications"
-                           StartIcon="@Icons.Material.Filled.NotificationsActive">
-                    Activer les rappels
+        @* Zones 5+6 fusionnées : rappels + recalculer *@
+        <div class="action-bar">
+            <div class="action-bar__primary">
+                @if (notificationPermission == "unsupported")
+                {
+                    <div style="opacity: 0.5; font-size: 0.8rem;">
+                        @Str.Get("ui", "notifications_unsupported")
+                    </div>
+                }
+                else if (notificationPermission == "denied")
+                {
+                    <div style="opacity: 0.6; font-size: 0.8rem;">
+                        @Str.Get("ui", "notifications_blocked")
+                    </div>
+                }
+                else if (notificationsScheduled > 0)
+                {
+                    <div>
+                        <MudChip T="string" Icon="@Icons.Material.Filled.CheckCircle"
+                                 Color="Color.Success" Variant="Variant.Text">
+                            @Str.Get("ui", "notifications_scheduled").Replace("{count}", notificationsScheduled.ToString())
+                        </MudChip>
+                        <div style="opacity: 0.5; font-size: 0.75rem; margin-top: 0.25rem;">
+                            @Str.Get("ui", "keep_app_open")
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                   Size="Size.Medium" OnClick="EnableNotifications"
+                                   StartIcon="@Icons.Material.Filled.NotificationsActive">
+                            @Str.Get("ui", "enable_notifications")
+                        </MudButton>
+                        <div style="opacity: 0.5; font-size: 0.75rem; margin-top: 0.5rem;">
+                            @Str.Get("ui", "notifications_helper")
+                        </div>
+                    </div>
+                }
+            </div>
+            <div class="action-bar__secondary">
+                <MudButton Variant="Variant.Text" Color="Color.Default"
+                           Size="Size.Small" OnClick="Reset"
+                           StartIcon="@Icons.Material.Filled.Refresh">
+                    @Str.Get("ui", "recalculate_button")
                 </MudButton>
-                <div style="opacity: 0.5; font-size: 0.75rem; margin-top: 0.5rem;">
-                    Recevez une notification à chaque action du plan
-                </div>
-            }
-        </div>
-
-        @* Zone 6 : Recalculer *@
-        <div class="reset-area">
-            <MudButton Variant="Variant.Outlined" Color="Color.Primary"
-                       Size="Size.Medium" OnClick="Reset"
-                       StartIcon="@Icons.Material.Filled.Refresh">
-                Recalculer
-            </MudButton>
+            </div>
         </div>
     }
 
@@ -300,15 +304,15 @@
         new("Montpellier", 43.6119,  3.8772),
     ];
 
-    private static readonly HousingOption[] HousingOptions =
+    private HousingOption[] HousingOptions =>
     [
-        new("Climatise",       "Climatisé"),
-        new("MaisonRdC",       "Maison plain-pied"),
-        new("MaisonEtage",     "Maison avec étage"),
-        new("MaisonSousToits", "Maison sous les toits"),
-        new("AppartBas",       "Appartement (bas)"),
-        new("AppartHaut",      "Appartement (haut)"),
-        new("SousToits",       "Appartement sous les toits"),
+        new("Climatise",       Str.Get("housing", "climatise")),
+        new("MaisonRdC",       Str.Get("housing", "maison_rdc")),
+        new("MaisonEtage",     Str.Get("housing", "maison_etage")),
+        new("MaisonSousToits", Str.Get("housing", "maison_sous_toits")),
+        new("AppartBas",       Str.Get("housing", "appart_bas")),
+        new("AppartHaut",      Str.Get("housing", "appart_haut")),
+        new("SousToits",       Str.Get("housing", "sous_toits")),
     ];
 
     // ── Seuil de gain significatif ──────────────────────────────────────────
@@ -323,7 +327,7 @@
     // Debug flag forwarded to the Python thermal service. Toggle to `true` here
     // to print the hourly indoor/outdoor/baseline table in the service console.
     // No UI switch is exposed — this is a developer-only knob.
-    private bool       debug             = false;
+    private bool       debug             = true;
     private bool       loading           = false;
     private string?    error             = null;
     private NightPlanModel? result  = null;
@@ -343,8 +347,8 @@
     // Aucun plan n'est nécessaire, on affiche un écran rassurant à la place.
     private bool   IsCoolNight     => result?.RiskLevel == "Normal";
     private string TempIntTooltip => GainSignificatif
-        ? $"En suivant le plan, vous gagnez {Gain:F1}°C vs fenêtres fermées toute la nuit."
-        : "Cette nuit, ouvrir les fenêtres n'apporte pas de gain thermique mesurable.";
+        ? Str.Get("tooltips", "indoor_predicted").Replace("{gain}", Gain.ToString("F1"))
+        : Str.Get("tooltips", "indoor_baseline");
 
     private string HousingLabel =>
         HousingOptions.FirstOrDefault(h => h.Code == housing)?.Label ?? housing;
@@ -379,9 +383,9 @@
     private string ArcLabel =>
         result?.RiskScore switch
         {
-            <= 30 => "Confortable",
-            <= 60 => "Chaud",
-            _     => "Très chaud"
+            <= 30 => Str.Get("ui", "arc_comfortable"),
+            <= 60 => Str.Get("ui", "arc_warm"),
+            _     => Str.Get("ui", "arc_very_warm")
         } ?? "";
 
     // ── Prochaine action (axe nocturne 18h→35h) ─────────────────────────────
@@ -397,11 +401,13 @@
         }
     }
 
-    private string GpsButtonLabel  => NextAction?.Label ?? "Plan terminé — bonne nuit !";
+    private string GpsButtonLabel  => NextAction is null
+        ? Str.Get("ui", "gps_done_label")
+        : Str.ActionLabel(NextAction.MessageKey, NextAction.Params);
     private string GpsButtonDetail =>
         NextAction is null
-            ? "Vous avez suivi toutes les étapes du plan."
-            : $"À {NextAction.Hour}h00 · {NextAction.Detail}";
+            ? Str.Get("ui", "gps_done_detail")
+            : $"À {NextAction.Hour}h00 · {Str.ActionDetail(NextAction.MessageKey, NextAction.Params)}";
 
     private (string Icon, Color Color) GpsButtonIconAndColor =>
         NextAction is null
@@ -430,11 +436,11 @@
             double lon  = gpsLon ?? selectedCity.Lon;
             string city = gpsLabel ?? selectedCity.Name;
             result = await Client.GetAsync(city, lat, lon, housing, voletsFermes, indoorTempStart ?? 24.0, debug);
-            if (result == null) error = "Erreur: pas de réponse du serveur";
+            if (result == null) error = Str.Get("errors", "no_server_response");
         }
         catch (Exception ex)
         {
-            error = $"Erreur: {ex.Message}";
+            error = Str.Get("errors", "api_error").Replace("{message}", ex.Message);
         }
         finally
         {
@@ -471,7 +477,12 @@
         if (perm == "granted" && result?.Actions != null)
         {
             var payload = result.Actions
-                .Select(a => new { hour = a.Hour, label = a.Label, detail = a.Detail })
+                .Select(a => new
+                {
+                    hour = a.Hour,
+                    label = Str.ActionLabel(a.MessageKey, a.Params),
+                    detail = Str.ActionDetail(a.MessageKey, a.Params)
+                })
                 .ToArray();
             notificationsScheduled = await JS.InvokeAsync<int>(
                 "scheduleNightPlanNotifications", (object)payload);
@@ -505,7 +516,7 @@
         }
         catch (Exception ex)
         {
-            error = $"Géolocalisation impossible : {ex.Message}";
+            error = Str.Get("errors", "geolocation_error").Replace("{message}", ex.Message);
         }
         finally
         {
