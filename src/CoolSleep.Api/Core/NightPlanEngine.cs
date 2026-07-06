@@ -131,7 +131,7 @@ public static class NightPlanEngine
         var morningIsBeforeClose = morningCloseHour is null || closeHour is null
             || NightHour(morningCloseHour.Value) < NightHour(closeHour.Value);
 
-        if (closeHour is not null && windowWasOpened
+        if (closeHour is not null && closeHour != openHour && windowWasOpened
             && !(morningCloseHour is not null && morningCloseHour != closeHour && morningIsBeforeClose))
         {
             var hClose  = hours.FirstOrDefault(h => h.Hour == closeHour);
