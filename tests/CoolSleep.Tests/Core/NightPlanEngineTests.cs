@@ -93,8 +93,8 @@ public class NightPlanEngineTests
         var plan = NightPlanEngine.Build("Nice", SampleHours, 22, 4, 25.0,
             HousingType.Climatise);
         plan.Actions.Should().NotContain(a => a.ActionType == ActionType.OuvrirFenetres);
-        plan.Actions.Should().NotContain(a => a.ActionType == ActionType.OuvrirMatin);
-        plan.Actions.Should().Contain(a => a.ActionType == ActionType.VentilateurOn);
+        plan.Actions.Should().NotContain(a => a.ActionType == ActionType.FermerMatin);
+        plan.Actions.Should().Contain(a => a.ActionType == ActionType.ReglerClimatisation);
     }
 
     [Fact]
@@ -122,13 +122,13 @@ public class NightPlanEngineTests
     }
 
     [Fact]
-    public void Build_UsesMorningOpenHour_ForOuvrirMatin()
+    public void Build_UsesMorningCloseHour_ForFermerMatin()
     {
-        // morningCloseHour=5 → l'action OuvrirMatin doit être à 5h
+        // morningCloseHour=3 → l'action FermerMatin doit être à 3h (avant closeHour=4)
         var plan = NightPlanEngine.Build("Bordeaux", SampleHours, 22, 4, 21.5,
-            morningCloseHour: 5);
+            morningCloseHour: 3);
         plan.Actions.Should().Contain(a =>
-            a.Hour == 5 && a.ActionType == ActionType.OuvrirMatin);
+            a.Hour == 3 && a.ActionType == ActionType.FermerMatin);
     }
 
     [Fact]
@@ -137,7 +137,7 @@ public class NightPlanEngineTests
         // morningCloseHour=null → matin trop chaud, pas d'action
         var plan = NightPlanEngine.Build("Bordeaux", SampleHours, 22, 4, 21.5,
             morningCloseHour: null);
-        plan.Actions.Should().NotContain(a => a.ActionType == ActionType.OuvrirMatin);
+        plan.Actions.Should().NotContain(a => a.ActionType == ActionType.FermerMatin);
     }
 
     [Fact]
@@ -146,6 +146,6 @@ public class NightPlanEngineTests
         // morningCloseHour == closeHour → action déjà couverte par FermerFenetres, pas de doublon
         var plan = NightPlanEngine.Build("Bordeaux", SampleHours, 22, 4, 21.5,
             morningCloseHour: 4);
-        plan.Actions.Should().NotContain(a => a.ActionType == ActionType.OuvrirMatin);
+        plan.Actions.Should().NotContain(a => a.ActionType == ActionType.FermerMatin);
     }
 }

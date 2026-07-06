@@ -1,12 +1,34 @@
-<Router AppAssembly="typeof(Program).Assembly">
-    <Found Context="routeData">
-        <RouteView RouteData="routeData" DefaultLayout="typeof(MainLayout)" />
-    </Found>
-    <NotFound>
-        <MainLayout>
-            <div style="padding: 2rem; text-align: center;">
-                <p>Page not found</p>
-            </div>
-        </MainLayout>
-    </NotFound>
-</Router>
+@inject StringsService Str
+
+@if (!Str.IsReady)
+{
+    <div></div>
+}
+else
+{
+    <Router AppAssembly="typeof(Program).Assembly">
+        <Found Context="routeData">
+            <RouteView RouteData="routeData" DefaultLayout="typeof(MainLayout)" />
+        </Found>
+        <NotFound>
+            <MainLayout>
+                <div style="padding: 2rem; text-align: center;">
+                    <p>Page not found</p>
+                </div>
+            </MainLayout>
+        </NotFound>
+    </Router>
+}
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        Str.OnInitialized += StateHasChanged;
+        await Str.InitializeAsync();
+    }
+
+    public void Dispose()
+    {
+        Str.OnInitialized -= StateHasChanged;
+    }
+}

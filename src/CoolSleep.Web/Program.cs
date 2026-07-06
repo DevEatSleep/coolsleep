@@ -16,6 +16,7 @@ builder.Services.AddScoped(sp => new HttpClient
         : apiBaseUrl)
 });
 
+builder.Services.AddSingleton<StringsService>();
 builder.Services.AddScoped<NightPlanApiClient>();
 builder.Services.AddMudServices();
 

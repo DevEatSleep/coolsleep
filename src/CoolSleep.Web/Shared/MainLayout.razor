@@ -1,5 +1,6 @@
 @inherits LayoutComponentBase
 @inject IDialogService DialogService
+@inject StringsService Str
 
 <MudThemeProvider IsDarkMode="true" />
 <MudDialogProvider />
@@ -15,7 +16,7 @@
                        Size="Size.Small"
                        style="opacity:0.6"
                        OnClick="ShowAbout"
-                       Title="À propos" />
+                       Title="@Str.Get("layout", "about_tooltip")" />
     </MudAppBar>
     <MudMainContent>
         @Body

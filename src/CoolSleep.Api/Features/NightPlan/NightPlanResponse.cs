@@ -13,7 +13,7 @@ public sealed record NightPlanResponse(
     IReadOnlyList<NightActionResponse> Actions);
 
 public sealed record NightActionResponse(
-    int    Hour,
-    string Label,
-    string Detail,
-    string ActionType);
+    int                                   Hour,
+    string                                MessageKey,
+    IReadOnlyDictionary<string, double>   Params,
+    string                                ActionType);

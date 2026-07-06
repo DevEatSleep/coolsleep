@@ -1,0 +1,122 @@
+{
+  "actions": {
+    "FermerVolets": {
+      "label": "Fermez les volets",
+      "detail": "Il fait {outdoorTemp}°C dehors et {indoorTemp}°C chez vous — bloquez la chaleur maintenant."
+    },
+    "ReglerClimatisation": {
+      "label": "Réglez la climatisation à 26°C",
+      "detail": "En dessous, le choc thermique au réveil perturbe le cycle de sommeil."
+    },
+    "OuvrirFenetres": {
+      "label": "Ouvrez les fenêtres en grand",
+      "detail": "Il fait {outdoorTemp}°C dehors contre {indoorTemp}°C chez vous — créez un courant d'air traversant."
+    },
+    "NuitSansFraicheur": {
+      "label": "Nuit sans fraîcheur exploitable",
+      "detail": "Il fait encore {outdoorTemp}°C dehors — même inférieure à l'intérieur, l'air chaud dehors ne rafraîchit pas. Gardez les fenêtres fermées."
+    },
+    "FermerFenetres_Rising": {
+      "label": "Fermez les fenêtres",
+      "detail": "La température extérieure remonte ({outdoorTemp}°C) — fermez pour conserver la fraîcheur accumulée."
+    },
+    "FermerFenetres_Equalized": {
+      "label": "Fermez les fenêtres",
+      "detail": "La température intérieure a rejoint l'extérieur ({outdoorTemp}°C) — les fenêtres ont fait leur travail, fermez."
+    },
+    "RefraichissementNocturne": {
+      "label": "Ventilation nocturne — réveil {alarmHour}h",
+      "detail": "Point le plus frais de la nuit : {outdoorTemp}°C. Ouvrez 15 min toutes fenêtres pour purger la chaleur résiduelle."
+    },
+    "NuitSansCreux": {
+      "label": "Nuit sans creux frais",
+      "detail": "La température la plus basse ({outdoorTemp}°C) n'arrive qu'à {alarmHour}h — gardez les fenêtres fermées."
+    },
+    "FermerMatin": {
+      "label": "Fermez — la fraîcheur s'arrête ici",
+      "detail": "La température extérieure remonte ({outdoorTemp}°C) — refermez fenêtres et volets avant la chaleur du jour."
+    },
+    "AucuneAction": {
+      "label": "Aucune action particulière cette nuit",
+      "detail": "Les températures nocturnes ne permettent pas d'améliorer significativement le confort. Gardez les fenêtres fermées et privilégiez un ventilateur."
+    }
+  },
+  "ui": {
+    "hero_title": "Optimisez votre nuit de chaleur",
+    "hero_subtitle": "Renseignez votre ville et votre type de logement — CoolSleep calcule exactement quand ouvrir et fermer vos fenêtres cette nuit pour rester au frais.",
+    "help_button": "Comment ça marche ?",
+    "city_label": "Ville",
+    "use_gps": "Utiliser ma position GPS",
+    "gps_loading": "Localisation en cours…",
+    "housing_label": "Type de logement",
+    "shutters_label": "Volets fermés la journée",
+    "indoor_temp_label": "Température intérieure ce matin (°C)",
+    "indoor_temp_helper": "Mesurée avant 10h, quand vous vous levez — laissez vide si vous n'avez pas de thermomètre",
+    "calculate_button": "Calculer mon plan de nuit",
+    "cool_night_heading": "Bonne nuit fraîche",
+    "cool_night_body": "Aucun plan nécessaire ce soir — il fait bon dehors comme dedans. Ouvrez vos fenêtres quand vous le souhaitez.",
+    "back_button": "Retour",
+    "full_plan": "Voir le plan complet",
+    "weather_data": "Données météo & températures",
+    "your_place": "Chez vous",
+    "outside": "Dehors",
+    "humidity": "Humidité",
+    "predicted_min": "nocturne prévue",
+    "average_tonight": "moyenne cette nuit",
+    "no_gain_possible": "sans gain possible",
+    "gain_vs_baseline": "↓ {gainDegrees}°C vs fenêtres fermées",
+    "outdoor_min_tooltip": "Température extérieure minimale prévue cette nuit — c'est le plancher naturel vers lequel votre logement peut tendre.",
+    "humidity_tooltip": "Humidité relative moyenne cette nuit. Une humidité élevée amplifie la sensation de chaleur (indice de chaleur).",
+    "notifications_unsupported": "Notifications non supportées sur ce navigateur",
+    "notifications_blocked": "Notifications bloquées — activez-les dans les réglages du navigateur",
+    "notifications_scheduled": "{count} rappel(s) programmé(s)",
+    "keep_app_open": "Laissez l'app ouverte en arrière-plan",
+    "enable_notifications": "Activer les rappels",
+    "notifications_helper": "Recevez une notification à chaque action du plan",
+    "recalculate_button": "Recalculer",
+    "arc_comfortable": "Confortable",
+    "arc_warm": "Chaud",
+    "arc_very_warm": "Très chaud",
+    "gps_done_label": "Plan terminé — bonne nuit !",
+    "gps_done_detail": "Vous avez suivi toutes les étapes du plan."
+  },
+  "housing": {
+    "climatise": "Climatisé",
+    "maison_rdc": "Maison plain-pied",
+    "maison_etage": "Maison avec étage",
+    "maison_sous_toits": "Maison sous les toits",
+    "appart_bas": "Appartement (bas)",
+    "appart_haut": "Appartement (haut)",
+    "sous_toits": "Appartement sous les toits"
+  },
+  "help": {
+    "title": "Comment CoolSleep calcule votre plan",
+    "housing_title": "Votre logement",
+    "housing_body": "Ville, type d'habitation et volets fermés — chaque détail affine la simulation d'inertie thermique.",
+    "daytime_title": "Chaleur diurne",
+    "daytime_body": "CoolSleep simule comment votre logement chauffe de 10h à 18h, en partant de votre température matinale.",
+    "night_title": "Plan nocturne",
+    "night_body": "L'algorithme calcule heure par heure la température intérieure et détermine quand l'air extérieur est assez frais pour ouvrir.",
+    "risk_title": "Score de risque",
+    "risk_body": "De 0 à 100 — il reflète l'intensité de la nuit thermique. Au-dessus de 50, la nuit risque d'être inconfortable sans action.",
+    "close_button": "Compris"
+  },
+  "about": {
+    "by": "Par Thierry Verdier",
+    "close_button": "Fermer"
+  },
+  "layout": {
+    "app_title": "CoolSleep 🌙",
+    "about_tooltip": "À propos"
+  },
+  "tooltips": {
+    "indoor_predicted": "En suivant le plan, vous gagnez {gain}°C vs fenêtres fermées toute la nuit.",
+    "indoor_baseline": "Cette nuit, ouvrir les fenêtres n'apporte pas de gain thermique mesurable."
+  },
+  "errors": {
+    "no_server_response": "Erreur: pas de réponse du serveur",
+    "api_error": "Erreur: {message}",
+    "geolocation_error": "Géolocalisation impossible : {message}",
+    "geolocation_unsupported": "Géolocalisation non supportée par ce navigateur."
+  }
+}

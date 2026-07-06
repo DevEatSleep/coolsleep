@@ -29,8 +29,7 @@ public sealed class NightPlanHandler(ThermalClient thermal)
 
         // 3. Construction du plan (Core)
         var hours = thermalResult.Hours
-            .Select(h => new HourlyData(
-                h.Hour, h.OutdoorTemp, h.IndoorTempEstimated,
+            .Select(h => new HourlyData(h.Hour, h.OutdoorTemp, h.IndoorTempEstimated,
                 h.HeatIndex, h.OpenWindowRecommended))
             .ToList();
 
@@ -65,7 +64,7 @@ public sealed class NightPlanHandler(ThermalClient thermal)
             OptimalCloseHour:      plan.OptimalCloseHour,
             Actions: plan.Actions
                 .Select(a => new NightActionResponse(
-                    a.Hour, a.Label, a.Detail, a.ActionType.ToString()))
+                    a.Hour, a.MessageKey, a.Params, a.ActionType.ToString()))
                 .ToList());
     }
 }
