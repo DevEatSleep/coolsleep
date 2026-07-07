@@ -28,10 +28,14 @@ builder.Services.AddHttpClient<MistralClient>(c =>
     c.BaseAddress = new Uri(builder.Configuration["Mistral:BaseUrl"] ?? "https://api.mistral.ai");
     c.Timeout = TimeSpan.FromSeconds(builder.Configuration.GetValue("Mistral:TimeoutSeconds", 5));
     var apiKey = builder.Configuration["Mistral:ApiKey"];
-    Console.WriteLine($"[INIT] Mistral API Key: {(string.IsNullOrEmpty(apiKey) ? "NOT SET" : "✓ LOADED")}");
     if (!string.IsNullOrEmpty(apiKey))
         c.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
 });
+
+// One-time startup check so the log appears once, not once per request
+var startupApiKey = builder.Configuration["Mistral:ApiKey"];
+Console.WriteLine($"[INIT] Mistral API Key: {(string.IsNullOrEmpty(startupApiKey) ? "NOT SET" : "✓ LOADED")}");
+Console.WriteLine($"[INIT] Mistral Enabled: {builder.Configuration.GetValue<bool>("Mistral:Enabled")}");
 
 builder.Services.AddScoped<NightPlanHandler>();
 

@@ -55,11 +55,12 @@ public sealed class NightPlanHandler(ThermalClient thermal, MistralClient mistra
                 var results = await mistral.PersonalizeAsync(request.City, request.Housing, plan.Actions, ct);
                 personalized = results.ToDictionary(r => r.Hour);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 // Best-effort uniquement — tout échec (timeout, 401, JSON invalide, panne
                 // Mistral) retombe silencieusement sur les templates i18n statiques côté
                 // client. Ne doit jamais faire échouer la requête ici.
+                Console.WriteLine($"[Mistral] Personalization failed ({ex.GetType().Name}): {ex.Message}");
             }
         }
 
