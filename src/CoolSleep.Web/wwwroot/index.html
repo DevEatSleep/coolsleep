@@ -26,10 +26,6 @@
             color: #fff;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
-        /* Prevent iOS auto-zoom on input focus (triggered when font-size < 16px) */
-        input, textarea, select {
-            font-size: 16px !important;
-        }
         #app {
             display: flex;
             flex-direction: column;
@@ -37,6 +33,12 @@
         }
     </style>
     <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
+    <!-- Prevent iOS auto-zoom: placed AFTER MudBlazor so it wins the cascade -->
+    <style>
+        input, textarea, select {
+            font-size: 16px !important;
+        }
+    </style>
 </head>
 <body>
     <div id="app"></div>
@@ -53,6 +55,25 @@
     </div>
 
     <script>
+        // ── Prevent iOS auto-zoom on input focus ────────────────────────────
+        // Safari zooms when a focused input has font-size < 16px. As a fallback
+        // to the CSS rule, we also flip maximum-scale=1 on focus and restore it
+        // on blur so the user can still pinch-zoom outside inputs.
+        (function () {
+            var vp = document.querySelector('meta[name=viewport]');
+            function lockZoom() {
+                if (vp) vp.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0';
+            }
+            function unlockZoom() {
+                if (vp) vp.content = 'width=device-width, initial-scale=1.0';
+            }
+            document.addEventListener('focusin', function (e) {
+                var tag = e.target && e.target.tagName;
+                if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') lockZoom();
+            });
+            document.addEventListener('focusout', unlockZoom);
+        })();
+
         // ── Version check & cache invalidation ──────────────────────────────
         // Sur iOS PWA (home screen), Safari cache très agressivement. On force
         // un rechargement complet quand version.json change (single source of truth).
