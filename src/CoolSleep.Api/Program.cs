@@ -28,6 +28,7 @@ builder.Services.AddHttpClient<MistralClient>(c =>
     c.BaseAddress = new Uri(builder.Configuration["Mistral:BaseUrl"] ?? "https://api.mistral.ai");
     c.Timeout = TimeSpan.FromSeconds(builder.Configuration.GetValue("Mistral:TimeoutSeconds", 5));
     var apiKey = builder.Configuration["Mistral:ApiKey"];
+    Console.WriteLine($"[INIT] Mistral API Key: {(string.IsNullOrEmpty(apiKey) ? "NOT SET" : "✓ LOADED")}");
     if (!string.IsNullOrEmpty(apiKey))
         c.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
 });
