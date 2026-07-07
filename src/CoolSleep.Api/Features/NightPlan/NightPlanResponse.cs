@@ -16,6 +16,4 @@ public sealed record NightActionResponse(
     int                                   Hour,
     string                                MessageKey,
     IReadOnlyDictionary<string, double>   Params,
-    string                                ActionType,
-    string?                               Label  = null,
-    string?                               Detail = null);
+    string                                ActionType);

@@ -1,10 +1,9 @@
 namespace CoolSleep.Api.Features.NightPlan;
 
-using System.Collections.Immutable;
 using System.Globalization;
 using CoolSleep.Api.Core;
 
-public sealed class NightPlanHandler(ThermalClient thermal, MistralClient mistral, IConfiguration config)
+public sealed class NightPlanHandler(ThermalClient thermal)
 {
     public async Task<NightPlanResponse> HandleAsync(
         NightPlanRequest  request,
@@ -46,25 +45,7 @@ public sealed class NightPlanHandler(ThermalClient thermal, MistralClient mistra
             thermalResult.MorningCloseHour,
             request.VoletsFermes);
 
-        // 4. Personnalisation Mistral (best-effort — ne doit jamais faire échouer la requête)
-        IReadOnlyDictionary<int, PersonalizedAction> personalized = ImmutableDictionary<int, PersonalizedAction>.Empty;
-        if (config.GetValue<bool>("Mistral:Enabled") && plan.Actions.Count > 0)
-        {
-            try
-            {
-                var results = await mistral.PersonalizeAsync(request.City, request.Housing, plan.Actions, ct);
-                personalized = results.ToDictionary(r => r.Hour);
-            }
-            catch (Exception ex)
-            {
-                // Best-effort uniquement — tout échec (timeout, 401, JSON invalide, panne
-                // Mistral) retombe silencieusement sur les templates i18n statiques côté
-                // client. Ne doit jamais faire échouer la requête ici.
-                Console.WriteLine($"[Mistral] Personalization failed ({ex.GetType().Name}): {ex.Message}");
-            }
-        }
-
-        // 5. Projection → Response
+        // 4. Projection → Response
         // Note: MinOutdoorTemp corresponds to MinOutdoorHour in thermalResult,
         // but we extract from Hours for clarity. AvgHumidity is derived from hourly data.
         var minOutdoorHourData = thermalResult.Hours.FirstOrDefault(h => h.Hour == thermalResult.MinOutdoorHour);
@@ -82,12 +63,8 @@ public sealed class NightPlanHandler(ThermalClient thermal, MistralClient mistra
             OptimalOpenHour:       plan.OptimalOpenHour,
             OptimalCloseHour:      plan.OptimalCloseHour,
             Actions: plan.Actions
-                .Select(a =>
-                {
-                    personalized.TryGetValue(a.Hour, out var p);
-                    return new NightActionResponse(
-                        a.Hour, a.MessageKey, a.Params, a.ActionType.ToString(), p?.Label, p?.Detail);
-                })
+                .Select(a => new NightActionResponse(
+                    a.Hour, a.MessageKey, a.Params, a.ActionType.ToString()))
                 .ToList());
     }
 }

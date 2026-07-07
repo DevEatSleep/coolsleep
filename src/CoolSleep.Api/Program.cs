@@ -1,4 +1,3 @@
-using System.Net.Http.Headers;
 using CoolSleep.Api.Features.NightPlan;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,22 +19,6 @@ builder.Services.AddHttpClient<ThermalClient>(c =>
     c.BaseAddress = new Uri(builder.Configuration["ThermalService:BaseUrl"] ?? "http://localhost:8000");
     c.Timeout = TimeSpan.FromSeconds(25);
 });
-
-// Personnalisation des messages via Mistral — appel best-effort, timeout court :
-// ne doit jamais ralentir/faire échouer la requête /api/nightplan.
-builder.Services.AddHttpClient<MistralClient>(c =>
-{
-    c.BaseAddress = new Uri(builder.Configuration["Mistral:BaseUrl"] ?? "https://api.mistral.ai");
-    c.Timeout = TimeSpan.FromSeconds(builder.Configuration.GetValue("Mistral:TimeoutSeconds", 5));
-    var apiKey = builder.Configuration["Mistral:ApiKey"];
-    if (!string.IsNullOrEmpty(apiKey))
-        c.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
-});
-
-// One-time startup check so the log appears once, not once per request
-var startupApiKey = builder.Configuration["Mistral:ApiKey"];
-Console.WriteLine($"[INIT] Mistral API Key: {(string.IsNullOrEmpty(startupApiKey) ? "NOT SET" : "✓ LOADED")}");
-Console.WriteLine($"[INIT] Mistral Enabled: {builder.Configuration.GetValue<bool>("Mistral:Enabled")}");
 
 builder.Services.AddScoped<NightPlanHandler>();
 

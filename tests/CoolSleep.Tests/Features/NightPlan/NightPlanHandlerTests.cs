@@ -3,7 +3,6 @@ namespace CoolSleep.Tests.Features.NightPlan;
 using CoolSleep.Api.Core;
 using CoolSleep.Api.Features.NightPlan;
 using FluentAssertions;
-using Microsoft.Extensions.Configuration;
 
 public class NightPlanHandlerTests
 {
@@ -51,43 +50,9 @@ public class NightPlanHandlerTests
             .Should().BeInAscendingOrder();
     }
 
-    [Fact]
-    public async Task HandleAsync_MistralSucceeds_PopulatesLabelAndDetail()
-    {
-        var handler = CreateHandler(mistralEnabled: true, new FakeMistralClient());
-        var result  = await handler.HandleAsync(Request("Paris", HousingType.AppartHaut));
-        result.Actions.Should().Contain(a =>
-            a.Label == $"Personalized: {a.MessageKey}" && a.Detail == "Personalized detail");
-    }
-
-    [Fact]
-    public async Task HandleAsync_MistralThrows_LabelAndDetailStayNull()
-    {
-        var handler = CreateHandler(mistralEnabled: true, new FakeMistralClient(throwOnCall: true));
-        var result  = await handler.HandleAsync(Request("Paris", HousingType.AppartHaut));
-        result.Actions.Should().OnlyContain(a => a.Label == null && a.Detail == null);
-    }
-
-    [Fact]
-    public async Task HandleAsync_MistralDisabled_SkipsCallAndLeavesNullFields()
-    {
-        var handler = CreateHandler(mistralEnabled: false, new FakeMistralClient(throwOnCall: true));
-        var result  = await handler.HandleAsync(Request("Paris", HousingType.AppartHaut));
-        result.Actions.Should().OnlyContain(a => a.Label == null && a.Detail == null);
-    }
-
     // ── Factory ───────────────────────────────────────────────────────────
-    private static NightPlanHandler CreateHandler(
-        bool mistralEnabled = false, MistralClient? mistralClient = null)
-    {
-        var config = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["Mistral:Enabled"] = mistralEnabled.ToString()
-            })
-            .Build();
-        return new NightPlanHandler(new FakeThermalClient(), mistralClient ?? new FakeMistralClient(), config);
-    }
+    private static NightPlanHandler CreateHandler() =>
+        new NightPlanHandler(new FakeThermalClient());
 }
 
 // ── Fake — méthode virtual sur le client concret ──────────────────────────
@@ -112,17 +77,3 @@ file sealed class FakeThermalClient()
             MorningCloseHour:    6));
 }
 
-file sealed class FakeMistralClient(bool throwOnCall = false)
-    : MistralClient(new HttpClient { BaseAddress = new Uri("http://localhost") },
-        new ConfigurationBuilder().Build())
-{
-    public override Task<IReadOnlyList<PersonalizedAction>> PersonalizeAsync(
-        string city, HousingType housing, IReadOnlyList<NightAction> actions,
-        CancellationToken ct = default)
-    {
-        if (throwOnCall) throw new HttpRequestException("simulated Mistral outage");
-        return Task.FromResult<IReadOnlyList<PersonalizedAction>>(
-            actions.Select(a => new PersonalizedAction(
-                a.Hour, a.MessageKey, $"Personalized: {a.MessageKey}", "Personalized detail")).ToList());
-    }
-}

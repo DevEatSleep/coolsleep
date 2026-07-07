@@ -76,12 +76,6 @@ public class StringsService(NavigationManager nav) : IAsyncInitialize
         }
     }
 
-    public string ActionLabel(NightActionModel action) =>
-        action.Label ?? ActionLabel(action.MessageKey, action.Params);
-
-    public string ActionDetail(NightActionModel action) =>
-        action.Detail ?? ActionDetail(action.MessageKey, action.Params);
-
     private static string Interpolate(string template, IReadOnlyDictionary<string, double>? @params)
     {
         if (@params is null || @params.Count == 0) return template;

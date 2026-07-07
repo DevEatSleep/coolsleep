@@ -1,6 +1,6 @@
 // Service worker with cache versioning to force updates on deployment
 // Version is read from version.json - update that file to bump cache
-let CACHE_VERSION = 'coolsleep-v1.0.0';
+let CACHE_VERSION = 'coolsleep-v1.4.0';
 
 const CACHE_URLS = [
     '/',
