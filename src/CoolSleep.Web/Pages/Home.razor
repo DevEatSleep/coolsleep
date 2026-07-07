@@ -2,6 +2,7 @@
 @inject NightPlanApiClient Client
 @inject IJSRuntime JS
 @inject HttpClient Http
+@inject NavigationManager Nav
 @inject IDialogService DialogService
 @inject StringsService Str
 
@@ -25,14 +26,18 @@
             </MudButton>
         </div>
 
-        <MudSelect T="CityOption" @bind-Value="selectedCity" Label="@Str.Get("ui", "city_label")"
-                   Variant="Variant.Outlined" Class="mb-4"
-                   AnchorOrigin="Origin.BottomCenter" TransformOrigin="Origin.TopCenter">
-            @foreach (var city in Cities)
-            {
-                <MudSelectItem Value="city">@city.Name</MudSelectItem>
-            }
-        </MudSelect>
+        <MudAutocomplete T="CityOption"
+                        @bind-Value="selectedCity"
+                        Label="@Str.Get("ui", "city_label")"
+                        Variant="Variant.Outlined" Class="mb-4"
+                        SearchFunc="SearchCities"
+                        ToStringFunc="@(c => c?.Name ?? string.Empty)"
+                        ResetValueOnEmptyText="false"
+                        CoerceText="true"
+                        CoerceValue="false"
+                        MaxItems="12"
+                        MinCharacters="1"
+                        Clearable="true" />
 
         <MudButton FullWidth Variant="Variant.Outlined" Color="Color.Default"
                    Size="Size.Large" OnClick="UseGps" Class="mb-4" Disabled="gpsLoading"
@@ -292,17 +297,37 @@
 @code {
     private record CityOption(string Name, double Lat, double Lon);
     private record HousingOption(string Code, string Label);
+    private record CityData(string Name, double Lat, double Lon);
 
-    private static readonly CityOption[] Cities =
-    [
-        new("Paris",       48.8566,  2.3522),
-        new("Lyon",        45.7640,  4.8357),
-        new("Marseille",   43.2965,  5.3698),
-        new("Bordeaux",    44.8378, -0.5792),
-        new("Toulouse",    43.6047,  1.4442),
-        new("Nice",        43.7102,  7.2620),
-        new("Montpellier", 43.6119,  3.8772),
-    ];
+    private CityOption[] allCities = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var url = Nav.BaseUri.TrimEnd('/') + "/data/cities-fr.json";
+        var data = await Http.GetFromJsonAsync<CityData[]>(url);
+        if (data != null)
+            allCities = data.Select(d => new CityOption(d.Name, d.Lat, d.Lon)).ToArray();
+        selectedCity = allCities.FirstOrDefault(c => c.Name == "Paris") ?? allCities.FirstOrDefault()!;
+    }
+
+    private static string StripAccents(string s) =>
+        new string(s.Normalize(System.Text.NormalizationForm.FormD)
+            .Where(c => System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c)
+                        != System.Globalization.UnicodeCategory.NonSpacingMark)
+            .ToArray())
+        .Normalize(System.Text.NormalizationForm.FormC);
+
+    private Task<IEnumerable<CityOption>> SearchCities(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return Task.FromResult(allCities.Take(12));
+        var lower = StripAccents(value.Trim().ToLowerInvariant());
+        var results = allCities
+            .Where(c => StripAccents(c.Name.ToLowerInvariant()).StartsWith(lower))
+            .OrderBy(c => c.Name)
+            .Take(12);
+        return Task.FromResult(results);
+    }
 
     private HousingOption[] HousingOptions =>
     [
@@ -320,7 +345,7 @@
     // et afficher "sans plan : X°C" serait contre-productif.
     private const double GainSeuil = 0.5;
 
-    private CityOption selectedCity      = Cities[0];
+    private CityOption selectedCity      = new("Paris", 48.8566, 2.3522);
     private string     housing           = "AppartBas";
     private bool       voletsFermes      = true;
     private double?    indoorTempStart   = null;
