@@ -1,8 +1,8 @@
 @page "/"
 @inject NightPlanApiClient Client
-@inject IJSRuntime JS
-@inject HttpClient Http
-@inject NavigationManager Nav
+@inject CityDirectoryService Cities
+@inject GeolocationService Geo
+@inject NotificationService Notifications
 @inject IDialogService DialogService
 @inject StringsService Str
 
@@ -30,7 +30,7 @@
                         @bind-Value="selectedCity"
                         Label="@Str.Get("ui", "city_label")"
                         Variant="Variant.Outlined" Class="mb-4"
-                        SearchFunc="SearchCities"
+                        SearchFunc="@((string val) => Cities.SearchCities(val))"
                         ToStringFunc="@(c => c?.Name ?? string.Empty)"
                         ResetValueOnEmptyText="false"
                         CoerceText="true"
@@ -156,10 +156,10 @@
                 <MudTimeline TimelineAlign="TimelineAlign.Start">
                     @foreach (var action in result.Actions)
                     {
-                        var (icon, color) = getIconAndColor(action.ActionType);
+                        var (icon, color) = GetIconAndColor(action.ActionType);
                         <MudTimelineItem Icon="@icon" Color="color">
-                            <div style="font-weight: 500;">@($"{action.Hour}:00") - @Str.ActionLabel(action)</div>
-                            <div style="opacity: 0.7; font-size: 0.9rem;">@Str.ActionDetail(action)</div>
+                            <div style="font-weight: 500;">@($"{action.Hour}:00") - @Str.ActionLabel(action.MessageKey, action.Params)</div>
+                            <div style="opacity: 0.7; font-size: 0.9rem;">@Str.ActionDetail(action.MessageKey, action.Params)</div>
                         </MudTimelineItem>
                     }
                 </MudTimeline>
@@ -295,39 +295,15 @@
 </MudContainer>
 
 @code {
-    private record CityOption(string Name, double Lat, double Lon);
     private record HousingOption(string Code, string Label);
-    private record CityData(string Name, double Lat, double Lon);
 
-    private CityOption[] allCities = [];
 
     protected override async Task OnInitializedAsync()
     {
-        var url = Nav.BaseUri.TrimEnd('/') + "/data/cities-fr.json";
-        var data = await Http.GetFromJsonAsync<CityData[]>(url);
-        if (data != null)
-            allCities = data.Select(d => new CityOption(d.Name, d.Lat, d.Lon)).ToArray();
-        selectedCity = allCities.FirstOrDefault(c => c.Name == "Paris") ?? allCities.FirstOrDefault()!;
+        await Cities.InitializeAsync();
+        selectedCity = Cities.AllCities.FirstOrDefault(c => c.Name == "Paris") ?? Cities.AllCities.FirstOrDefault()!;
     }
 
-    private static string StripAccents(string s) =>
-        new string(s.Normalize(System.Text.NormalizationForm.FormD)
-            .Where(c => System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c)
-                        != System.Globalization.UnicodeCategory.NonSpacingMark)
-            .ToArray())
-        .Normalize(System.Text.NormalizationForm.FormC);
-
-    private Task<IEnumerable<CityOption>> SearchCities(string value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-            return Task.FromResult(allCities.Take(12));
-        var lower = StripAccents(value.Trim().ToLowerInvariant());
-        var results = allCities
-            .Where(c => StripAccents(c.Name.ToLowerInvariant()).StartsWith(lower))
-            .OrderBy(c => c.Name)
-            .Take(12);
-        return Task.FromResult(results);
-    }
 
     private HousingOption[] HousingOptions =>
     [
@@ -352,7 +328,7 @@
     // Debug flag forwarded to the Python thermal service. Toggle to `true` here
     // to print the hourly indoor/outdoor/baseline table in the service console.
     // No UI switch is exposed — this is a developer-only knob.
-    private bool       debug             = true;
+    private bool       debug             = false;
     private bool       loading           = false;
     private string?    error             = null;
     private NightPlanModel? result  = null;
@@ -377,15 +353,6 @@
 
     private string HousingLabel =>
         HousingOptions.FirstOrDefault(h => h.Code == housing)?.Label ?? housing;
-
-    private Color riskColor =>
-        result?.RiskLevel switch
-        {
-            "Normal"             => Color.Success,
-            "Modere"             => Color.Warning,
-            "Eleve" or "Critique"=> Color.Error,
-            _                    => Color.Default
-        };
 
     // ── Arc SVG ─────────────────────────────────────────────────────────────
     private static readonly double ArcCircumference = 2.0 * Math.PI * 80.0;
@@ -428,16 +395,16 @@
 
     private string GpsButtonLabel  => NextAction is null
         ? Str.Get("ui", "gps_done_label")
-        : Str.ActionLabel(NextAction);
+        : Str.ActionLabel(NextAction.MessageKey, NextAction.Params);
     private string GpsButtonDetail =>
         NextAction is null
             ? Str.Get("ui", "gps_done_detail")
-            : $"À {NextAction.Hour}h00 · {Str.ActionDetail(NextAction)}";
+            : $"À {NextAction.Hour}h00 · {Str.ActionDetail(NextAction.MessageKey, NextAction.Params)}";
 
     private (string Icon, Color Color) GpsButtonIconAndColor =>
         NextAction is null
             ? (Icons.Material.Filled.CheckCircleOutline, Color.Success)
-            : getIconAndColor(NextAction.ActionType);
+            : GetIconAndColor(NextAction.ActionType);
 
     // ── Actions ─────────────────────────────────────────────────────────────
     private async Task ShowHelp()
@@ -481,7 +448,7 @@
         gpsLon   = null;
         gpsLabel = null;
         notificationsScheduled = 0;
-        _ = JS.InvokeVoidAsync("cancelScheduledNotifications");
+        _ = Notifications.CancelAsync();
     }
 
     // ── Notifications ───────────────────────────────────────────────────────
@@ -489,28 +456,25 @@
     {
         if (firstRender)
         {
-            notificationPermission = await JS.InvokeAsync<string>("getNotificationPermission");
+            notificationPermission = await Notifications.GetPermissionAsync();
             StateHasChanged();
         }
     }
 
     private async Task EnableNotifications()
     {
-        var perm = await JS.InvokeAsync<string>("requestNotificationPermission");
+        var perm = await Notifications.RequestPermissionAsync();
         notificationPermission = perm;
 
         if (perm == "granted" && result?.Actions != null)
         {
             var payload = result.Actions
-                .Select(a => new
-                {
-                    hour = a.Hour,
-                    label = Str.ActionLabel(a),
-                    detail = Str.ActionDetail(a)
-                })
+                .Select(a => new NotificationScheduleItem(
+                    a.Hour,
+                    Str.ActionLabel(a.MessageKey, a.Params),
+                    Str.ActionDetail(a.MessageKey, a.Params)))
                 .ToArray();
-            notificationsScheduled = await JS.InvokeAsync<int>(
-                "scheduleNightPlanNotifications", (object)payload);
+            notificationsScheduled = await Notifications.ScheduleAsync(payload);
         }
     }
 
@@ -520,24 +484,10 @@
         error      = null;
         try
         {
-            var coords = await JS.InvokeAsync<GpsCoords>("getGeolocation");
-            gpsLat = coords.Latitude;
-            gpsLon = coords.Longitude;
-            try
-            {
-                var url = FormattableString.Invariant(
-                    $"https://nominatim.openstreetmap.org/reverse?format=json&lat={coords.Latitude:F6}&lon={coords.Longitude:F6}&accept-language=fr");
-                var geo = await Http.GetFromJsonAsync<NominatimResponse>(url);
-                gpsLabel = geo?.Address?.City
-                    ?? geo?.Address?.Town
-                    ?? geo?.Address?.Village
-                    ?? geo?.Address?.County
-                    ?? $"Ma position ({coords.Latitude:F2}°, {coords.Longitude:F2}°)";
-            }
-            catch
-            {
-                gpsLabel = $"Ma position ({coords.Latitude:F2}°, {coords.Longitude:F2}°)";
-            }
+            var location = await Geo.GetCurrentLocationAsync();
+            gpsLat   = location.Lat;
+            gpsLon   = location.Lon;
+            gpsLabel = location.Label;
         }
         catch (Exception ex)
         {
@@ -549,17 +499,12 @@
         }
     }
 
-    private record GpsCoords(double Latitude, double Longitude);
-    private record NominatimResponse(NominatimAddress? Address);
-    private record NominatimAddress(string? City, string? Town, string? Village, string? County);
-
-    private (string Icon, Color Color) getIconAndColor(string actionType) =>
+    private (string Icon, Color Color) GetIconAndColor(string actionType) =>
         actionType switch
         {
             "FermerVolets"             => (Icons.Material.Filled.Blinds,         Color.Info),
             "OuvrirFenetres"           => (Icons.Material.Filled.Air,            Color.Success),
             "FermerFenetres"           => (Icons.Material.Filled.Window,         Color.Warning),
-            "VentilateurOn"            => (Icons.Material.Filled.AcUnit,         Color.Primary),
             "ReglerClimatisation"      => (Icons.Material.Filled.AcUnit,         Color.Primary),
             "RefraichissementNocturne" => (Icons.Material.Filled.NightsStay,     Color.Secondary),
             "FermerMatin"              => (Icons.Material.Filled.WbSunny,        Color.Warning),

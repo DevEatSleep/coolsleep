@@ -18,6 +18,9 @@ builder.Services.AddScoped(sp => new HttpClient
 
 builder.Services.AddSingleton<StringsService>();
 builder.Services.AddScoped<NightPlanApiClient>();
+builder.Services.AddScoped<CityDirectoryService>();
+builder.Services.AddScoped<GeolocationService>();
+builder.Services.AddScoped<NotificationService>();
 builder.Services.AddMudServices();
 
 await builder.Build().RunAsync();
